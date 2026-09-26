@@ -48,7 +48,7 @@ function HandleModScript(H, MOD_DEF, IsMulti_pak, global_integer_to_float, conf,
   local NumXLST = 0
   
   -- local UserScriptName = H.LoadFileData("CurrentModScript.txt")
-  -- UserScriptName = strsub(UserScriptName,#(H.gMASTER_FOLDER_PATH..[[ModScript\]])+1)
+  -- UserScriptName = strsub(UserScriptName,#(H.gMASTER_FOLDER_PATH..[[ModScript/]])+1)
   local UserScriptName = _bScriptName
   
   --***************************************************************************************************
@@ -81,9 +81,9 @@ function HandleModScript(H, MOD_DEF, IsMulti_pak, global_integer_to_float, conf,
   
   local CurrentScriptName = H.LoadFileData("CurrentModScript.txt")
   -- because strgsub pattern does not work with all folder names (ex.: ".")
-  if strfind(CurrentScriptName,H.gMASTER_FOLDER_PATH..[[ModScript\]],1,true) then
-    local start = strfind(CurrentScriptName,H.gMASTER_FOLDER_PATH..[[ModScript\]],1,true)
-    CurrentScriptName = strsub(CurrentScriptName,1,start - 1)..strsub(CurrentScriptName,#(H.gMASTER_FOLDER_PATH..[[ModScript\]]) + start)
+  if strfind(CurrentScriptName,H.gMASTER_FOLDER_PATH..[[ModScript/]],1,true) then
+    local start = strfind(CurrentScriptName,H.gMASTER_FOLDER_PATH..[[ModScript/]],1,true)
+    CurrentScriptName = strsub(CurrentScriptName,1,start - 1)..strsub(CurrentScriptName,#(H.gMASTER_FOLDER_PATH..[[ModScript/]]) + start)
   end
   CurrentScriptName = "["..CurrentScriptName.."]"
   H.Report(CurrentScriptName,">>>>>>> Loaded script")
@@ -219,29 +219,29 @@ local function AddFiles(H, tRef)
           if count == 0 then
             --no extension, assume it is a folder name and that the end '\' is missing
             --add '\'
-            DestNormOrgFilenamePath = strgsub(DestNormOrgFilenamePath..[[\]],[[\\]],[[\]])
+            DestNormOrgFilenamePath = strgsub(DestNormOrgFilenamePath..[[/]],[[//]],[[/]])
             prn2("@@@ 1A: DestNormOrgFilenamePath = ["..DestNormOrgFilenamePath.."]")
           else
             newFilenameProvided = true
           end
           
-          --local DestNormFolderPath = H.NormalizePath(H.gMASTER_FOLDER_PATH .. H.gPathToModbuilderMod .. H.GetFolderPathFromFilePath(DestNormOrgFilenamePath)) --..[[\]])
-          local DestNormFolderPath = H.NormalizePath(H.gPathToModbuilderMod .. H.GetFolderPathFromFilePath(DestNormOrgFilenamePath)) --..[[\]])
+          --local DestNormFolderPath = H.NormalizePath(H.gMASTER_FOLDER_PATH .. H.gPathToModbuilderMod .. H.GetFolderPathFromFilePath(DestNormOrgFilenamePath)) --..[[/]])
+          local DestNormFolderPath = H.NormalizePath(H.gPathToModbuilderMod .. H.GetFolderPathFromFilePath(DestNormOrgFilenamePath)) --..[[/]])
           prn2("@@@ 2:      DestNormFolderPath = ["..DestNormFolderPath.."]")
           --local DestNormFilePath = H.NormalizePath(H.gMASTER_FOLDER_PATH .. H.gPathToModbuilderMod .. DestNormOrgFilenamePath)
           local DestNormFilePath = H.NormalizePath(H.gPathToModbuilderMod .. DestNormOrgFilenamePath)
           prn2("@@@ 3:        DestNormFilePath = ["..DestNormFilePath.."]")
           
-          local _,count = strgsub(DestNormOrgFilenamePath,[[\]],"")
+          local _,count = strgsub(DestNormOrgFilenamePath,[[/]],"")
           prn2("@@@    count '\\' = "..count)
           if count > 0 then
-            if not H.IsDirExist(strgsub(DestNormFolderPath,[[\]],[[\\]])) then
+            if not H.IsDirExist(strgsub(DestNormFolderPath,[[/]],[[//]])) then
               local DestNormFolderPathNoMod = strgsub(DestNormFolderPath,H.gPathToModbuilderMod,"")
               if not H.gIs_LEAN_MODE then
                 print("       new folder: " .. DestNormFolderPathNoMod)
               end
               H.Report("","       new 'folder': "..[["]]..DestNormFolderPathNoMod..[["]])
-              DestNormFolderPath = strgsub(DestNormFolderPath,[[\]],[[\\]])
+              DestNormFolderPath = strgsub(DestNormFolderPath,[[/]],[[//]])
               H.mkdir(DestNormFolderPath)
             end
           end
@@ -260,7 +260,7 @@ local function AddFiles(H, tRef)
               prn2("@@@ pakName = "..pakName)
               
               --were to save the extracted file
-              local tmpFilePath = [[.\_INTERNAL]]
+              local tmpFilePath = [[./_INTERNAL]]
               H.mkdir(tmpFilePath)
               
   -- local cmd = [[psarc.exe extract "]]..H.gNMS_PCBANKS_FOLDER_PATH..pakName..[[" --to="]]..tmpFilePath..[[" "]]..source..[[" -y]]
@@ -275,7 +275,7 @@ local function AddFiles(H, tRef)
                 --now we copy it to DESTINATION
                 
                 --point to MODBUILDER\_INTERNAL
-                FilePathSource = tmpFilePath..[[\]]..source
+                FilePathSource = tmpFilePath..[[/]]..source
                 
                 local newFilename = H.GetFilenameFromFilePath(DestNormOrgFilenamePath)
                 prn2("@@@ 5c: newFilename = ["..newFilename.."]")
@@ -288,7 +288,7 @@ local function AddFiles(H, tRef)
                   --no filename given, use current name of the source with the destination path
                   local currentFilename = H.GetFilenameFromFilePath(FilePathSource)
                   prn2("@@@ 5e: currentFilename = ["..currentFilename.."]")
-                  local currentFilenamePath = H.NormalizePath([[.\MOD\]]..dest..[[\]]..currentFilename)
+                  local currentFilenamePath = H.NormalizePath([[./MOD/]]..dest..[[/]]..currentFilename)
                   if not H.gIs_LEAN_MODE then
                     print("        create file: "..currentFilenamePath)
                   end
@@ -296,7 +296,7 @@ local function AddFiles(H, tRef)
                   dest = currentFilenamePath
                 else
                   --use destination new path and filename
-                  local currentFilenamePath = H.NormalizePath([[.\MOD\]]..dest)
+                  local currentFilenamePath = H.NormalizePath([[./MOD/]]..dest)
                   if not H.gIs_LEAN_MODE then
                     print("        create file: "..currentFilenamePath)
                   end
@@ -348,7 +348,7 @@ local function AddFiles(H, tRef)
                 print("      create file: "..DestNormOrgFilenamePath)
               end
               H.Report("","      create 'file': "..[["]]..DestNormOrgFilenamePath..[["]])
-              DestNormFilePath = strgsub(DestNormFilePath,[[\]],[[\\]])
+              DestNormFilePath = strgsub(DestNormFilePath,[[/]],[[//]])
               local FileData = AddFilesST["FILE_CONTENT"]:gsub([[\\]],[[\]]) -- change \\ to \ in the string
               
               if type(FileData) == "string" and H.ltrim(FileData):sub(1,5) == [[<?xml]] then
@@ -373,7 +373,7 @@ local function AddFiles(H, tRef)
               end
               
               -- add to list
-              local dest = strsub(DestNormFilePath,strfind(DestNormFilePath,[[MOD\\]],1,true)+5):gsub([[\\]],[[\]])
+              local dest = strsub(DestNormFilePath,strfind(DestNormFilePath,[[MOD//]],1,true)+5):gsub([[//]],[[/]])
               -- print("@@@ CONTENT: Dest = ["..dest.."]")
               -- printf("UserScriptName = %s",UserScriptName)
               if not scriptFileList[dest] then
@@ -398,7 +398,7 @@ local function AddFiles(H, tRef)
               FilePathSource = EXTFS
             else
               -- path relative to current script folder
-              FilePathSource = H.GetFolderPathFromFilePath(H.LoadFileData("CurrentModScript.txt"))..[[\]]..EXTFS
+              FilePathSource = H.GetFolderPathFromFilePath(H.LoadFileData("CurrentModScript.txt"))..[[/]]..EXTFS
             end
             
             WildcardsInUse = WildcardsInUse or H.IsWildcardsExist(FilePathSource)
@@ -414,8 +414,8 @@ local function AddFiles(H, tRef)
                 --no filename given, use current name
                 local currentFilename = H.GetFilenameFromFilePath(FilePathSource)
                 prn2("@@@ 4b: currentFilename = ["..currentFilename.."]")
-                prn2("@@@ 4c: DestNormFolderPath\\currentFilename = ["..DestNormFolderPath..[[\]]..currentFilename.."]")
-                local currentFilenamePath = H.NormalizePath(DestNormFolderPath..[[\]]..currentFilename)
+                prn2("@@@ 4c: DestNormFolderPath\\currentFilename = ["..DestNormFolderPath..[[/]]..currentFilename.."]")
+                local currentFilenamePath = H.NormalizePath(DestNormFolderPath..[[/]]..currentFilename)
                 if not H.gIs_LEAN_MODE then
                   print("        create file: "..currentFilenamePath)
                 end
@@ -441,7 +441,7 @@ local function AddFiles(H, tRef)
                 end
               else
                 --use destination new filename
-                local newFilenamePath = strgsub(DestNormFolderPath..[[\]]..newFilename,[[\\]],[[\]])
+                local newFilenamePath = strgsub(DestNormFolderPath..[[/]]..newFilename,[[//]],[[/]])
                 prn2("@@@ 4f: newFilenamePath = ["..newFilenamePath.."]")
                 if not H.gIs_LEAN_MODE then
                   print("        create file: "..newFilenamePath)
@@ -666,9 +666,9 @@ end
                 --and save info for NEW_FILEPATH_AND_NAME
                 NEW_FILEPATH_AND_NAME[#NEW_FILEPATH_AND_NAME+1] = H.MXML_PC_EXMLtoMBIN(mbin_file_source[i][2])
                 
-                if strfind(tempTable[#tempTable],[[LANGUAGE\]],1,true) then
+                if strfind(tempTable[#tempTable],[[LANGUAGE/]],1,true) then
                   -- a LANGUAGE file
-                  if H.gFastPAKlist[tempTable[#tempTable]] then
+                  if H.FastPakLookup(tempTable[#tempTable]) then
                     -- a genuine NMS LANGUAGE file, record it
                     H.parentOfCustomLanguageFiles[NEW_FILEPATH_AND_NAME[#NEW_FILEPATH_AND_NAME]] = tempTable[#tempTable]
                   else
@@ -768,7 +768,7 @@ end
               --   MAY not exist?
               if H.WDEBUG then print(H.FullPathFile.." n'existe pas in MOD") end
               
-              -- add to list of files to unpack into _TEMP\EXTRACTED and decompile into _TEMP\DECOMPILED
+              -- add to list of files to unpack into _TEMP/EXTRACTED and decompile into _TEMP/DECOMPILED
               MBIN_table[#MBIN_table+1] = file
             end
           end
@@ -1108,6 +1108,7 @@ end
               
                       -- H.printf("  linked = [%s]",x)
                       H.linkedFiles[x] = true
+                      H.linkedFiles[x:gsub([[\]],[[/]])] = true -- Linux: posix twin key
                     end
                   end
                 end
@@ -1270,7 +1271,7 @@ end
                 if H.WDEBUG then H.WFAK("Just before MapFileTrees") end
                 --=================== Only create MapFileTrees of MXML ORIGINAL... ========================
                 if H._bReCreateMapFileTree ~= "X" then
-                  local src = [[.\_TEMP\DECOMPILED\]]..file
+                  local src = [[./_TEMP/DECOMPILED/]]..file
                   if H.IsFileExist(src) then
                     if H._bCreateMapFileTree then
                       if H._bAllowMapFileTreeCreator == "Y" then
@@ -1294,7 +1295,7 @@ end
                       else
                         --MAIN thread processing
                         -- OBSOLETE/DEPRICATED
-                        DisplayMapFileTreeEXT(H,H.ParseTextFileIntoTable([[.\_TEMP\DECOMPILED\]]..file),file)
+                        DisplayMapFileTreeEXT(H,H.ParseTextFileIntoTable([[./_TEMP/DECOMPILED/]]..file),file)
                       end
                       
                     else
@@ -1575,11 +1576,11 @@ end
                       My.tmpFileText = "<EMPTY>\n"
                       H.gSection[My.sec_empty] = "<EMPTY>\n"
                       
-                      My.sec_emptySavedPath = [[..\TOOLS\SavedSections\]]..My.sec_empty..[[.xml]]
+                      My.sec_emptySavedPath = [[../TOOLS/SavedSections/]]..My.sec_empty..[[.xml]]
                       if My.IsEmptyFromDisk then
                         -- try to read back the lines from a file in the TOOLS\SavedSections folder using the sec_empty name.xml
                         if H.IsFileExist(My.sec_emptySavedPath) then
-                          H.WriteToFile("",H.gMASTER_FOLDER_PATH..[[TOOLS\SavedSections\]]..My.sec_empty..[[.xml]])
+                          H.WriteToFile("",H.gMASTER_FOLDER_PATH..[[TOOLS/SavedSections/]]..My.sec_empty..[[.xml]])
                           H.DEBUG_SEC_print([[@@@@@ sec_empty_A: Found sec_empty in a file in the TOOLS\SavedSections folder using the sec_empty name.xml, length = ]]..#My.tmpFileText)
                         else
                           --check if this section name already exist in internal H.gSection list
@@ -1601,7 +1602,7 @@ end
                         else
                           --try to read back the lines from a file in the TOOLS\SavedSections folder using the sec_empty name.xml
                           if H.IsFileExist(My.sec_emptySavedPath) then
-                            H.WriteToFile("",H.gMASTER_FOLDER_PATH..[[TOOLS\SavedSections\]]..My.sec_empty..[[.xml]])
+                            H.WriteToFile("",H.gMASTER_FOLDER_PATH..[[TOOLS/SavedSections/]]..My.sec_empty..[[.xml]])
                             -- H.printf("<<< sec_empty loaded from disk %s.xml >>>",My.sec_empty)
                             H.DEBUG_SEC_print([[@@@@@ sec_empty_E: Found sec_empty in a file in the TOOLS\SavedSections folder using the sec_empty name.xml, length = ]]..#My.tmpFileText)
                           else
@@ -1647,7 +1648,7 @@ end
                       
                       My.tmpFileText = ""
                       
-                      My.sec_editSavedPath = [[..\TOOLS\SavedSections\]]..My.sec_edit..[[.xml]]
+                      My.sec_editSavedPath = [[../TOOLS/SavedSections/]]..My.sec_edit..[[.xml]]
                       if My.IsEditFromDisk then
                         --try to read back the lines from a file in the TOOLS\SavedSections folder using the SEC_edit name.xml
                         if H.IsFileExist(My.sec_editSavedPath) then
@@ -2256,7 +2257,7 @@ if H.WDEBUG then printf("^v^v^v^v^v  C: #TextFileTable = %d",#TextFileTable) end
             local function MyErrHandler(x)
               -- H.printf("In MyErrHandler: x = [%s]",tostring(x))
               -- copy raw script for user (* required to indicate a file)
-              H.CopyFile("UserLoadedScript.lua",[[..\TOOLS\ModScriptCheck\]]..strgsub(H.GetFilenameFromFilePath(_bScriptName),"%.lua",""):gsub("%.LUA","")..[[.RawScript.lua*]])
+              H.CopyFile("UserLoadedScript.lua",[[../TOOLS/ModScriptCheck/]]..strgsub(H.GetFilenameFromFilePath(_bScriptName),"%.lua",""):gsub("%.LUA","")..[[.RawScript.lua*]])
               
               -- print("   x = "..tostring(x))
               local line = tostring(tonumber(strmatch(x,":(%d+):")) + H.seleneExtraLines)
@@ -2269,7 +2270,7 @@ if H.WDEBUG then printf("^v^v^v^v^v  C: #TextFileTable = %d",#TextFileTable) end
               local tmp = g
               -- local tmp = strsub(x,strfind(x,":")+1)
               -- print(H.gcERROR.." Lua Script error: "..tmp.." "..H._zDEFAULT)
-              print("                       "..H.gcNOTICE..[[ line number above ^ refers to TOOLS\ModScriptCheck\]]..strgsub(_bScriptName,"%.lua",""):gsub("%.LUA","")..[[.RawScript.lua ]]..H._zDEFAULT)
+              print("                       "..H.gcNOTICE..[[ line number above ^ refers to TOOLS/ModScriptCheck/]]..strgsub(_bScriptName,"%.lua",""):gsub("%.LUA","")..[[.RawScript.lua ]]..H._zDEFAULT)
               
               H.SetReportData(H.DelayedReportData,"","Lua Script error: "..tmp,"ERR")
               H.LuaEndedOk(H.THIS)
@@ -2408,7 +2409,7 @@ if H.WDEBUG then printf("^v^v^v^v^v  C: #TextFileTable = %d",#TextFileTable) end
                                   -- H.Report("","Could not find ["..k.."] in the internal EXML MODDED table, check your script!","WARNING")
                                 end
                                 -- v = table.concat(FileDataTable,"\n")
-                                -- H.WriteToFile(v,[[.\MOD\]]..k)
+                                -- H.WriteToFile(v,[[./MOD/]]..k)
                               
                               else -- if type(v) == "table" then
                                 -- the EXML is a table
@@ -2450,8 +2451,8 @@ if H.WDEBUG then printf("^v^v^v^v^v  C: #TextFileTable = %d",#TextFileTable) end
                             local newDict = H.returnedTables["AMUMSS_Dictionary"]
                             if type(newDict) == "table" then
                               if H.gDEBUG_EXT_FUNC then print("      ======>>> processing <AMUMSS_Dictionary>") end
-                              local dictFilenamePath = [[ModScript\ModHelperScripts\Dictionary.lua]]
-                              H.tablePrintSave(newDict, [[..\]]..dictFilenamePath,"DICTIONARY")
+                              local dictFilenamePath = [[ModScript/ModHelperScripts/Dictionary.lua]]
+                              H.tablePrintSave(newDict, [[../]]..dictFilenamePath,"DICTIONARY")
                               NumReplacements = NumReplacements + 1
                               -- reset
                               H.returnedTables["AMUMSS_Dictionary"] = nil
@@ -2463,11 +2464,11 @@ if H.WDEBUG then printf("^v^v^v^v^v  C: #TextFileTable = %d",#TextFileTable) end
                             local Language = H.returnedTables["AMUMSS_Language"]
                             if type(Language) == "boolean" and Language then
                               if H.gDEBUG_EXT_FUNC then print("      ======>>> processing <AMUMSS_Language>") end
-                              -- FORCE save of H.EXMLmodTable 'LANGUAGE' tables to _TEMP\DECOMPILED\LANGUAGE
+                              -- FORCE save of H.EXMLmodTable 'LANGUAGE' tables to _TEMP/DECOMPILED\LANGUAGE
                               for k,v in pairs(H.EXMLmodTable) do
-                                if strsub(k,1,9) == [[LANGUAGE\]] then
+                                if strsub(k,1,9) == [[LANGUAGE/]] then
                                   local exml = table.concat(v,"\n")
-                                  H.WriteToFile(exml,[[.\_TEMP\DECOMPILED\]]..k..[[.MXML]])
+                                  H.WriteToFile(exml,[[./_TEMP/DECOMPILED/]]..k..[[.MXML]])
                                   -- NumReplacements = NumReplacements + 1
                                   -- reset this EXMLmodTable to the original so that it is discarded later on and no pak is created
                                   H.EXMLmodTable[k] = H.cloneArray(H.EXMLorgTable[k])
@@ -2578,7 +2579,7 @@ if H.WDEBUG then printf("^v^v^v^v^v  C: #TextFileTable = %d",#TextFileTable) end
               local file = strgsub(mbin_file_source[u],[[%.MBIN%.PC]],[[.MBIN]])
               file = strgsub(file,[[%.MBIN]],[[.MXML]])
               file = H.NormalizePath(file)
-              -- print("["..[[.\MOD\]]..file.."]")
+              -- print("["..[[./MOD/]]..file.."]")
 
               -- remove extension
               local fileLessEXML = strgsub(file,H.GetExtensionFromFilePath(file).."$","")
@@ -2587,9 +2588,9 @@ if H.WDEBUG then printf("^v^v^v^v^v  C: #TextFileTable = %d",#TextFileTable) end
               -- if table.concat(H.EXMLorgTable[fileLessEXML]) == table.concat(H.EXMLmodTable[fileLessEXML]) then
                 -- -- safe to discard
                 
-                if H.WDEBUG then H.WFAK("<<< MBIN_FS_DISCARD >>> ["..[[.\MOD\]]..file.."]") end
+                if H.WDEBUG then H.WFAK("<<< MBIN_FS_DISCARD >>> ["..[[./MOD/]]..file.."]") end
               
-                H.DeleteFile([[.\MOD\]]..file)
+                H.DeleteFile([[./MOD/]]..file)
     -- print(" * * * * * *")
     -- print("                                === BEFORE H.EXMLmodTable == NIL ===")
     -- local count = 0
@@ -2616,16 +2617,16 @@ if H.WDEBUG then printf("^v^v^v^v^v  C: #TextFileTable = %d",#TextFileTable) end
     -- end
     -- print(" * * * * * *                                ================")
     
-  -- H.WFAKD([[Waiting: .\MOD\]]..file)
+  -- H.WFAKD([[Waiting: ./MOD/]]..file)
                 -- remove from script list
                 scriptFileList[fileLessEXML] = nil
                 
                 --remove original empty folder(s), if any
-                local FolderPath = lfs.currentdir()..[[\MOD\]]..H.GetFolderPathFromFilePath(file)
+                local FolderPath = lfs.currentdir()..[[/MOD/]]..H.GetFolderPathFromFilePath(file)
                 -- print("*** FolderPath = ["..FolderPath.."]")
                 repeat
                   --to remove all empty folders in the path
-                  local cmd = [[rd /q "]]..FolderPath..[[" 1>NUL 2>NUL]]
+                  local cmd = [[rmdir "]]..FolderPath..[[" >/dev/null 2>&1]]
                   H.NewThread(cmd)
                   FolderPath = H.GetFolderPathFromFilePath(FolderPath)
                   -- print("["..FolderPath.."]")
@@ -2795,8 +2796,8 @@ if H.WDEBUG then printf("^v^v^v^v^v  D: #TextFileTable = %d",#TextFileTable) end
       local scriptFilenamePath = H.LoadFileData("CurrentModScript.txt")
       local scriptFilename = H.GetFilenameFromFilePath(scriptFilenamePath)
       
-      -- H.WriteToFile(H.ConvertLineTableToText(outTable), [[..\TOOLS\ModScriptCheck\]]..strsub(scriptFilename,1,-5)..[[.postserial.lua]])
-      H.WriteToFile(outTable, [[..\TOOLS\ModScriptCheck\]]..strsub(scriptFilename,1,-5)..[[.postserial.lua]])
+      -- H.WriteToFile(H.ConvertLineTableToText(outTable), [[../TOOLS/ModScriptCheck/]]..strsub(scriptFilename,1,-5)..[[.postserial.lua]])
+      H.WriteToFile(outTable, [[../TOOLS/ModScriptCheck/]]..strsub(scriptFilename,1,-5)..[[.postserial.lua]])
       -- for i=1,#outTable do
         -- print(outTable[i])
       -- end
@@ -2820,7 +2821,7 @@ end
   -- H.pv(H.THIS.."From CheckReCreatedEXMLAgainstOrg()")
   -- print("")
   -- -- H.Report("")
-  -- -- *file (ORG EXML)        H.gMASTER_FOLDER_PATH..[[\SCRIPTBUILDER\MOD\]]..string.gsub(nMOD["MBIN_CHANGE_TABLE"][m]["MBIN_FILE_SOURCE"],"%.MBIN",".MXML"),
+  -- -- *file (ORG EXML)        H.gMASTER_FOLDER_PATH..[[\SCRIPTBUILDER/MOD/]]..string.gsub(nMOD["MBIN_CHANGE_TABLE"][m]["MBIN_FILE_SOURCE"],"%.MBIN",".MXML"),
   -- --local temp = H.gMASTER_FOLDER_PATH..H.gPathToModbuilderMod..file
   -- local temp = H.gPathToModbuilderMod..file
   -- -- temp = string.gsub(temp,[[\]],[[\\]]) --no need to do this replacement
@@ -3940,8 +3941,8 @@ My.CheckPoint(3)
   H.Dprintf(H._zWHITEonDARKCYAN.."At "..H.dClock().." ENTERING: text_to_add section (%.0fKb)"..H._zDEFAULT,collectgarbage("count"))
   if text_to_add then
     local function CheckAddString(s)
-      local _,opening = s:gsub("<","<",-1)
-      local _,closing = s:gsub(">",">",-1)
+      local _,opening = s:gsub("<","<")
+      local _,closing = s:gsub(">",">")
       local IsMissing = false
       if opening ~= closing then
         print(">>> "..H.gcWARNING..[[ [WARNING] missing '<' or '>' in "ADD" string: check your script! ]]..H._zDEFAULT)
@@ -4348,7 +4349,7 @@ My.CheckPoint(3)
       H.DEBUG_SEC_print("@@@@@ SEC_UNSAVED: Found section in internal H.gSection list")
     else
       --try to read back the lines from a file in the TOOLS\SavedSections folder using the SEC_edit name.xml
-      if H.IsFileExist([[..\TOOLS\SavedSections\]]..sec_unsaved..[[.xml]]) then
+      if H.IsFileExist([[../TOOLS/SavedSections/]]..sec_unsaved..[[.xml]]) then
         My.OnDisk = true
         -- do not execute this MXML_CT
         My.IsSkipThisEXML_CT = true
@@ -4451,8 +4452,8 @@ My.CheckPoint(3)
       
     else
       --try to read back the lines from a file in the TOOLS\SavedSections folder using the sec_add_named name.xml
-      if H.IsFileExist([[..\TOOLS\SavedSections\]]..sec_add_named..[[.xml]]) then
-        H.gSection[sec_add_named] = H.LoadFileData([[..\TOOLS\SavedSections\]]..sec_add_named..[[.xml]])
+      if H.IsFileExist([[../TOOLS/SavedSections/]]..sec_add_named..[[.xml]]) then
+        H.gSection[sec_add_named] = H.LoadFileData([[../TOOLS/SavedSections/]]..sec_add_named..[[.xml]])
         H.DEBUG_SEC_print("@@@@@   B ==> H.gSection[sec_add_named] = ["..strsub(H.gSection[sec_add_named],1,150).."...]")
         H.DEBUG_SEC_print([[@@@@@ B: In SEC_add_named: Found in a file in the TOOLS\SavedSections folder using the SEC_ADD_NAMED ']]..tostring(sec_add_named)..[[.xml', ADDED to internal list]])
         My.IsTextToAdd = true
@@ -6002,7 +6003,7 @@ My.CheckPoint(3)
   H.DEBUG_TableToStringCount_print("###  ---- H.WholeTextFileTable refresh DONE ----")
 
   if strfind(file,".MXML",1,true) then
-    _,My.lineEndings = strgsub(H.WholeTextFileTable[1],'>','>',-1)
+    _,My.lineEndings = strgsub(H.WholeTextFileTable[1],'>','>')
     if My.lineEndings ~= #TextFileTable then
       H.printf(">>> "..H.gcWARNING..[[ [WARNING] Modded MXML's line count(%d) does not match number of line endings ">"(%d), Keywords search and ADD could probably fail.  Please correct your script! ]]..H._zDEFAULT,#TextFileTable,My.lineEndings)
       H.printf(">>> "..H.gcWARNING..[[          Most probable cause is a previous "ADD" operation that did not include a trailing CRLF at the end of the string ]]..H._zDEFAULT)
@@ -7329,7 +7330,7 @@ H.DEBUG_CurrentLine_print(" = = = = AUTO-INCREMENT offset on IGNORE,xyz")
                 print("         >>> "..H._zBRIGHTORANGE.."Saving section"..H._zDEFAULT.." ["..H._zBRIGHTGREEN..[["]]..sec_save_to..[["]]..H._zDEFAULT.."] to disk ("..(GroupEndLine[1]-GroupStartLine[1]+1).." lines)")
               end
               H.Report("","         >>> Saving section ["..[["]]..sec_save_to..[["]].."] to disk ("..(GroupEndLine[1]-GroupStartLine[1]+1).." lines)")
-              H.WriteToFile(H.thisSection,H.gMASTER_FOLDER_PATH..[[TOOLS\SavedSections\]]..sec_save_to..[[.xml]])
+              H.WriteToFile(H.thisSection,H.gMASTER_FOLDER_PATH..[[TOOLS/SavedSections/]]..sec_save_to..[[.xml]])
             end
           end
         end
@@ -8685,7 +8686,7 @@ H.DEBUG_CurrentLine_print(" = = = = STAY on 1st line")
                           F.firstPosStart,F.firstPosEnd = strfind(F.text,F.s)
                           
                           if F.firstPosEnd then
-                            F._,F.lineNumber = F.text:sub(1,F.firstPosEnd):gsub('>','>',-1)
+                            F._,F.lineNumber = F.text:sub(1,F.firstPosEnd):gsub('>','>')
                             F.linesNumFound[#F.linesNumFound + 1] = F.lineNumber + 1
                             
                             F.secondPos,F.nextPos = strfind(F.text,F.s,F.firstPosEnd + 1)
@@ -8698,13 +8699,13 @@ H.DEBUG_CurrentLine_print(" = = = = STAY on 1st line")
                               F.PreviouslineNumber = F.lineNumber
                               F.PreviousPosEnd = F.firstPosEnd + 1
                               
-                              _,F.lineNumber = F.text:sub(F.PreviousPosEnd,F.nextPos):gsub('>','>',-1)
+                              _,F.lineNumber = F.text:sub(F.PreviousPosEnd,F.nextPos):gsub('>','>')
                               F.linesNumFound[#F.linesNumFound + 1] = F.PreviouslineNumber + F.lineNumber + 1
                               
                               while F.nextPos do
                                 F.nextPos,F.endPos = strfind(F.text,F.s,F.nextPos + 1)
                                 if F.nextPos then
-                                  _,F.lineNumber = F.text:sub(F.PreviousPosEnd,F.endPos):gsub('>','>',-1)
+                                  _,F.lineNumber = F.text:sub(F.PreviousPosEnd,F.endPos):gsub('>','>')
                                   F.linesNumFound[#F.linesNumFound + 1] = F.PreviouslineNumber + F.lineNumber + 1
                                   
                                   F.nextPos = F.endPos + 1
@@ -9529,7 +9530,7 @@ H.DEBUG_CurrentLine_print(" = = = = STAY on 1st line")
                 H.DEBUG_SEC_print([[@@@@@ KEEP_SECTION: Writing SEC_save_to a file in the TOOLS\SavedSections folder after changes]])
                 H.DEBUG_SEC_print("@@@@@ KEEP_SECTION: sec_save_to = <"..sec_save_to..">")
                 
-                H.WriteToFile(H.thisSection,H.gMASTER_FOLDER_PATH..[[TOOLS\SavedSections\]]..sec_save_to..[[.xml]])
+                H.WriteToFile(H.thisSection,H.gMASTER_FOLDER_PATH..[[TOOLS/SavedSections/]]..sec_save_to..[[.xml]])
                 
                 -- ALWAYS save it internally!!!
                 H.DEBUG_SEC_print("@@@@@ KEEP_SECTION: Saving content of SEC_save_to in the internal gSection list (just after GROUPS defined)")
@@ -9545,7 +9546,7 @@ H.DEBUG_CurrentLine_print(" = = = = STAY on 1st line")
                 H.DEBUG_SEC_print([[@@@@@ KEEP_SECTION: Writing SEC_save_to a file in the TOOLS\SavedSections folder after changes]])
                 H.DEBUG_SEC_print("@@@@@ KEEP_SECTION: sec_save_to = <"..H.GetFilenameFromFilePath(file)..">")
                 
-                H.WriteToFile(H.thisSection,H.gMASTER_FOLDER_PATH..[[TOOLS\SavedSections\]]..H.GetFilenameFromFilePath(file)..[[.xml]])
+                H.WriteToFile(H.thisSection,H.gMASTER_FOLDER_PATH..[[TOOLS/SavedSections/]]..H.GetFilenameFromFilePath(file)..[[.xml]])
                 
                 -- ALWAYS save it internally!!!
                 H.DEBUG_SEC_print("@@@@@ KEEP_SECTION: Saving content of SEC_save_to in the internal gSection list (just after GROUPS defined)")
@@ -9591,14 +9592,14 @@ H.DEBUG_CurrentLine_print(" = = = = STAY on 1st line")
                 H.DEBUG_SEC_print("@@@@@ KEEP_SECTION: writing to file <"..sec_save_to..">")
                 H.DEBUG_SEC_print("@@@@@ KEEP_SECTION: #TextFileTable = "..#TextFileTable.." lines")
                 
-                H.WriteToFile(H.thisSection,H.gMASTER_FOLDER_PATH..[[TOOLS\SavedSections\]]..sec_save_to..[[.xml]])
+                H.WriteToFile(H.thisSection,H.gMASTER_FOLDER_PATH..[[TOOLS/SavedSections/]]..sec_save_to..[[.xml]])
               
               elseif sec_edit ~= "" then
                 H.DEBUG_SEC_print([[@@@@@ KEEP_SECTION: Writing to file in the TOOLS\SavedSections folder after changes]])
                 H.DEBUG_SEC_print("@@@@@ KEEP_SECTION: writing to file <"..sec_edit..">")
                 H.DEBUG_SEC_print("@@@@@ KEEP_SECTION: #TextFileTable = "..#TextFileTable.." lines")
                 
-                H.WriteToFile(H.thisSection,H.gMASTER_FOLDER_PATH..[[TOOLS\SavedSections\]]..sec_edit..[[.xml]])
+                H.WriteToFile(H.thisSection,H.gMASTER_FOLDER_PATH..[[TOOLS/SavedSections/]]..sec_edit..[[.xml]])
               end
             end
           end
@@ -10500,7 +10501,7 @@ function FindGroup(H, TextFileTable, WholeTextFileTable, prec_key_words, IsPrece
     
     if firstPosEnd then
       -- if My.DEBUG_CheckUniqueness then print("  firstPosEnd = "..firstPosEnd) end
-      local _,lineNumber = WholeTextFile:sub(1,firstPosEnd):gsub('>','>',-1)
+      local _,lineNumber = WholeTextFile:sub(1,firstPosEnd):gsub('>','>')
       linesNumFound[#linesNumFound + 1] = lineNumber + 1
       -- if My.DEBUG_CheckUniqueness then print("  A: lineNumber = "..linesNumFound[#linesNumFound]) end
       
@@ -10517,7 +10518,7 @@ function FindGroup(H, TextFileTable, WholeTextFileTable, prec_key_words, IsPrece
         local PreviousPosEnd = firstPosEnd + 1
         
         -- if My.DEBUG_CheckUniqueness then print("  FastCheckUniqueness: More than one") end
-        _,lineNumber = WholeTextFile:sub(PreviousPosEnd,nextPos):gsub('>','>',-1)
+        _,lineNumber = WholeTextFile:sub(PreviousPosEnd,nextPos):gsub('>','>')
         linesNumFound[#linesNumFound + 1] = PreviouslineNumber + lineNumber + 1
         -- if My.DEBUG_CheckUniqueness then print("  B: lineNumber = "..linesNumFound[#linesNumFound]) end
         
@@ -10527,7 +10528,7 @@ function FindGroup(H, TextFileTable, WholeTextFileTable, prec_key_words, IsPrece
         while nextPos do
           nextPos,endPos = strfind(WholeTextFile,s,nextPos + 1)
           if nextPos then
-            _,lineNumber = WholeTextFile:sub(PreviousPosEnd,endPos):gsub('>','>',-1)
+            _,lineNumber = WholeTextFile:sub(PreviousPosEnd,endPos):gsub('>','>')
             linesNumFound[#linesNumFound + 1] = PreviouslineNumber + lineNumber + 1
             -- if My.DEBUG_CheckUniqueness then print("  C: lineNumber = "..linesNumFound[#linesNumFound]) end
             
@@ -11989,10 +11990,10 @@ function AnalyzeScript(H, script,scriptTable, scriptFilename, scriptFilenamePath
     else
       spacer = "        "
     end
-    print([[   @@@ ]]..spacer..[[line number above ^ refers to ]]..H._zBRIGHTORANGE..[[TOOLS\ModScriptCheck\]]..string.gsub(scriptFilename,"%.lua",""):gsub("%.LUA","")..[[.LUAC_Script.lua]]..H._zDEFAULT)
+    print([[   @@@ ]]..spacer..[[line number above ^ refers to ]]..H._zBRIGHTORANGE..[[TOOLS/ModScriptCheck/]]..string.gsub(scriptFilename,"%.lua",""):gsub("%.LUA","")..[[.LUAC_Script.lua]]..H._zDEFAULT)
     print("   @@@ Done but found problem(s)")
     -- copy LUAC_ script for user (* required to indicate a file)
-    H.CopyFile(tmpScriptLUACFileName,[[..\TOOLS\ModScriptCheck\]]..string.gsub(scriptFilename,"%.lua",""):gsub("%.LUA","")..[[.LUAC_Script.lua*]])
+    H.CopyFile(tmpScriptLUACFileName,[[../TOOLS/ModScriptCheck/]]..string.gsub(scriptFilename,"%.lua",""):gsub("%.LUA","")..[[.LUAC_Script.lua*]])
   else
     print("   @@@ Done without problem")
   end
@@ -12455,8 +12456,8 @@ function AnalyzeScript(H, script,scriptTable, scriptFilename, scriptFilenamePath
         end
       end
       
-      -- H.WriteToFile(H.ConvertLineTableToText(rs),[[..\TOOLS\ModScriptCheck\]]..scriptFilename..[[.selene.txt]])
-      H.WriteToFile(rs,[[..\TOOLS\ModScriptCheck\]]..scriptFilename..[[.selene.txt]])
+      -- H.WriteToFile(H.ConvertLineTableToText(rs),[[../TOOLS/ModScriptCheck/]]..scriptFilename..[[.selene.txt]])
+      H.WriteToFile(rs,[[../TOOLS/ModScriptCheck/]]..scriptFilename..[[.selene.txt]])
       -- H.WFAK("after selene")
     else
       print("   @@@ No other syntax problem detected")
@@ -12996,7 +12997,7 @@ function OpenUserScript(H)
     local scriptFilenamePath = H.LoadFileData("CurrentModScript.txt")
     local scriptFilename = H.GetFilenameFromFilePath(scriptFilenamePath)
     
-    os.remove([[..\TOOLS\ModScriptCheck\]]..scriptFilename..[[.selene.txt]]) --try to delete the last analysis
+    os.remove([[../TOOLS/ModScriptCheck/]]..scriptFilename..[[.selene.txt]]) --try to delete the last analysis
     
     local script = H.LoadFileData(scriptFilenamePath) -- loaded as one string
     local scriptORG = script
@@ -13045,14 +13046,14 @@ function OpenUserScript(H)
         local state = ""
         
         if helperScript then
-          helperScript = strgsub(strgsub(helperScript,[[%%AMUMSS_PATH%%]],H.gMASTER_FOLDER_PATH),[[/]],[[\]])
+          helperScript = strgsub(strgsub(helperScript,[[%%AMUMSS_PATH%%]],H.gMASTER_FOLDER_PATH),[[\]],[[/]])
           
           local thisDOFILEexist = true
           printQ("QQQQQQ_0 scriptTable[i] = ["..scriptTable[i].."]")
           IsFoundDO_FILE = true
           DO_FILEcount = DO_FILEcount + 1
           
-          local defaultPath = [[..\ModScript\ModHelperScripts\]]
+          local defaultPath = [[../ModScript/ModHelperScripts/]]
           if helperScript:find(".:") then
             -- use provided full path
             state = "_F"
@@ -13064,7 +13065,7 @@ function OpenUserScript(H)
             printQ("   QQQQQQ_2 Using RELATIVE path")
             -- CurrentPath is always AMUMSS\MODBUILDER
             
-            local scriptPath = H.GetFolderPathFromFilePath(H.LoadFileData("CurrentModScript.txt"))..[[\]]
+            local scriptPath = H.GetFolderPathFromFilePath(H.LoadFileData("CurrentModScript.txt"))..[[/]]
             printQ("                scriptPath = ["..scriptPath.."]")
             
             if H.IsFileExist(scriptPath..helperScript) then
@@ -13074,11 +13075,11 @@ function OpenUserScript(H)
               defaultPath = scriptPath
               printQ("                new defaultPath = ["..defaultPath..helperScript.."]")
             
-            elseif H.IsFileExist(scriptPath..[[ModHelperScripts\]]..helperScript) then
+            elseif H.IsFileExist(scriptPath..[[ModHelperScripts/]]..helperScript) then
               -- path is relative to scriptPath in ModHelperScripts folder
               state = "_M"
-              printQ("      QQQQQQ_2B Using RELATIVE path to ModFolder\\ModHelperScripts = ["..scriptPath..[[ModHelperScripts\]]..helperScript.."]")
-              defaultPath = scriptPath..[[ModHelperScripts\]]
+              printQ("      QQQQQQ_2B Using RELATIVE path to ModFolder\\ModHelperScripts = ["..scriptPath..[[ModHelperScripts/]]..helperScript.."]")
+              defaultPath = scriptPath..[[ModHelperScripts/]]
               printQ("                new defaultPath = ["..defaultPath..helperScript.."]")
             
             elseif H.IsFileExist(defaultPath..helperScript) then
@@ -13190,10 +13191,10 @@ function OpenUserScript(H)
     if _mDEBUG then
       print("WWW _mDEBUG is ACTIVE MMM")
       print(lfs.currentdir())
-      H.WriteToFile(script, [[..\TempScript.lua]]) -- same content as 'scriptname'.luax without :gsub([[\\]],[[\]])
-      H.WriteToFile(scriptORG, [[.\ScriptsORG\]]..scriptFilename) -- EXACT same content as the ORIGINAL 'scriptname'.lua
-      H.WriteToFile(script:gsub([[\\]],[[\]]), [[.\ScriptsUsed\]]..scriptFilename) -- same content as 'scriptname'.luax with :gsub([[\\]],[[\]])
-      H.WFAKD([[ ==> script (..\TempScript.lua), scriptORG (.\ScriptsORG\scriptFilename) and script (.\ScriptsUsed\scriptFilename) created]])
+      H.WriteToFile(script, [[../TempScript.lua]]) -- same content as 'scriptname'.luax without :gsub([[\\]],[[\]])
+      H.WriteToFile(scriptORG, [[./ScriptsORG/]]..scriptFilename) -- EXACT same content as the ORIGINAL 'scriptname'.lua
+      H.WriteToFile(script:gsub([[\\]],[[\]]), [[./ScriptsUsed/]]..scriptFilename) -- same content as 'scriptname'.luax with :gsub([[\\]],[[\]])
+      H.WFAKD([[ ==> script (../TempScript.lua), scriptORG (./ScriptsORG/scriptFilename) and script (./ScriptsUsed/scriptFilename) created]])
     end
     
     -- if not problemFound then
@@ -13210,7 +13211,7 @@ function OpenUserScript(H)
     --***************************************************************************************************
     local function MyErrHandler(x)
       -- copy raw script for user (* required to indicate a file)
-      H.CopyFile("UserLoadedScript.lua",[[..\TOOLS\ModScriptCheck\]]..strgsub(scriptFilename,"%.lua",""):gsub("%.LUA","")..[[.RawScript.lua*]])
+      H.CopyFile("UserLoadedScript.lua",[[../TOOLS/ModScriptCheck/]]..strgsub(scriptFilename,"%.lua",""):gsub("%.LUA","")..[[.RawScript.lua*]])
       
       local line = tostring(tonumber(strmatch(x,":(%d+):")) + H.seleneExtraLines)
       local g = strgsub(x,"^(.-:).-(:.-)$","%1"..line.."%2")
@@ -13232,7 +13233,7 @@ function OpenUserScript(H)
       -- end
       
       print(H.gcERROR.." Lua Script error: "..g.." "..H._zDEFAULT)
-      print("                       "..H.gcNOTICE..[[ line number above ^ refers to TOOLS\ModScriptCheck\]]..strgsub(scriptFilename,"%.lua",""):gsub("%.LUA","")..[[.RawScript.lua ]]..H._zDEFAULT)
+      print("                       "..H.gcNOTICE..[[ line number above ^ refers to TOOLS/ModScriptCheck/]]..strgsub(scriptFilename,"%.lua",""):gsub("%.LUA","")..[[.RawScript.lua ]]..H._zDEFAULT)
       H.SetReportData(H.DelayedReportData,"","Lua Script error: "..x,"ERR")
       -- print(debug.traceback(nil,0))
       -- H.Report("", debug.traceback(nil,0),"ERR")
@@ -13313,21 +13314,21 @@ function OpenUserScript(H)
       
       SerializeLoadedScript(H,itemName,NMS_MOD_DEFINITION_CONTAINER,outTable)
       outTable[#outTable] = strsub(outTable[#outTable],1,-2) -- remove last ,
-      -- -- H.WriteToFile(H.ConvertLineTableToText(outTable), [[..\TOOLS\ModScriptCheck\]]..strsub(scriptFilename,1,-5)..[[.raw.lua]])
-      -- H.WriteToFile(outTable, [[..\TOOLS\ModScriptCheck\]]..strsub(scriptFilename,1,-5)..[[.raw.lua]])
+      -- -- H.WriteToFile(H.ConvertLineTableToText(outTable), [[../TOOLS/ModScriptCheck/]]..strsub(scriptFilename,1,-5)..[[.raw.lua]])
+      -- H.WriteToFile(outTable, [[../TOOLS/ModScriptCheck/]]..strsub(scriptFilename,1,-5)..[[.raw.lua]])
       -- H.printf("           >>> done in "..H.dClock(os.clock() - SerializingStart))
 
       -- SerializingStart = os.clock()
       outTable = PostProcessing(H,outTable)
-      -- H.WriteToFile(H.ConvertLineTableToText(outTable), [[..\TOOLS\ModScriptCheck\]]..strsub(scriptFilename,1,-5)..[[.serial.lua]])
-      H.WriteToFile(outTable, [[..\TOOLS\ModScriptCheck\]]..strsub(scriptFilename,1,-5)..[[.serial.lua]])
+      -- H.WriteToFile(H.ConvertLineTableToText(outTable), [[../TOOLS/ModScriptCheck/]]..strsub(scriptFilename,1,-5)..[[.serial.lua]])
+      H.WriteToFile(outTable, [[../TOOLS/ModScriptCheck/]]..strsub(scriptFilename,1,-5)..[[.serial.lua]])
       
       if H.gIs_MODSfolderNameScript then
         -- mod folder does not exist yet
-        H.mkdir([[..\TOOLS\MODDER_Helper\]]..strsub(scriptFilename,1,-5))
+        H.mkdir([[../TOOLS/MODDER_Helper/]]..strsub(scriptFilename,1,-5))
         
         -- keep only the script name
-        H.WriteToFile(outTable, [[..\TOOLS\MODDER_Helper\]]..strsub(scriptFilename,1,-5)..[[\]]..strsub(scriptFilename,1,-5)..[[.serial.lua]])
+        H.WriteToFile(outTable, [[../TOOLS/MODDER_Helper/]]..strsub(scriptFilename,1,-5)..[[/]]..strsub(scriptFilename,1,-5)..[[.serial.lua]])
       else
         local mod_filename = NMS_MOD_DEFINITION_CONTAINER["MOD_FILENAME"]
         if mod_filename == nil or mod_filename == "" then
@@ -13336,9 +13337,9 @@ function OpenUserScript(H)
         mod_filename = string.gsub(mod_filename,"%.pak",""):gsub("%.PAK","")
 
         -- mod folder does not exist yet
-        H.mkdir([[..\TOOLS\MODDER_Helper\]]..mod_filename)
+        H.mkdir([[../TOOLS/MODDER_Helper/]]..mod_filename)
         
-        H.WriteToFile(outTable, [[..\TOOLS\MODDER_Helper\]]..mod_filename..[[\]]..strsub(scriptFilename,1,-5)..[[.serial.lua]])
+        H.WriteToFile(outTable, [[../TOOLS/MODDER_Helper/]]..mod_filename..[[/]]..strsub(scriptFilename,1,-5)..[[.serial.lua]])
       end
       
       H.printf("           >>> done in "..H.dClock(os.clock() - SerializingStart))
@@ -13725,7 +13726,7 @@ function TestScript(H, NMS_MOD_DEFINITION_CONTAINER, IsCOMBINE_MODS_flag)
           local TempEXML = string.gsub(MBIN_Source[i],[[.MBIN.PC]],[[.MBIN]])
           TempEXML = string.gsub(TempEXML,[[.MBIN]],[[.MXML]])
           
-          if H.IsFileExist([[.\MOD\]]..TempEXML) then
+          if H.IsFileExist([[./MOD/]]..TempEXML) then
             found = true
           else
             TempMBIN = string.gsub(MBIN_Source[i],[[\]],[[/]])
@@ -13884,7 +13885,7 @@ function CreateCompositePakName(H)
 
   local pakContent = H.ParseTextFileIntoTable("ModScript_pak_list.txt")
   for i=1,#pakContent do
-    local pakName = string.gsub(pakContent[i],[[..\ModScript\]],"")
+    local pakName = string.gsub(pakContent[i],[[../ModScript/]],"")
     pakName = string.gsub(pakName,[[%.pak]],""):gsub([[%.PAK]],"")
     allNames = allNames..pakName.."+"
 
@@ -14222,19 +14223,19 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           -- H.WFAK("Stop BEFORE NEW GETFRESHSOURCES...")
 
           -- we are in MODBUILDER folder
-          if not H.IsDirExist([[.\_TEMP]]) then
+          if not H.IsDirExist([[./_TEMP]]) then
             -- print("%%%%%%%%%%%%%%%%%%  HAD TO RE_CREATE _TEMP !!!  %%%%%%%%%%%%%%%%%%")
-            H.mkdir([[.\_TEMP]])
+            H.mkdir([[./_TEMP]])
           end
           
-          if not H.IsDirExist([[.\_TEMP\DECOMPILED]]) then
-            -- print([[%%%%%%%%%%%%%%%%%%  HAD TO RE_CREATE _TEMP\DECOMPILED !!!  %%%%%%%%%%%%%%%%%%]])
-            H.mkdir([[.\_TEMP\DECOMPILED]])
+          if not H.IsDirExist([[./_TEMP/DECOMPILED]]) then
+            -- print([[%%%%%%%%%%%%%%%%%%  HAD TO RE_CREATE _TEMP/DECOMPILED !!!  %%%%%%%%%%%%%%%%%%]])
+            H.mkdir([[./_TEMP/DECOMPILED]])
           end
           
-          if not H.IsDirExist([[.\_TEMP\EXTRACTED]]) then
-            -- print([[%%%%%%%%%%%%%%%%%%  HAD TO RE_CREATE _TEMP\EXTRACTED !!!  %%%%%%%%%%%%%%%%%%]])
-            H.mkdir([[.\_TEMP\EXTRACTED]])
+          if not H.IsDirExist([[./_TEMP/EXTRACTED]]) then
+            -- print([[%%%%%%%%%%%%%%%%%%  HAD TO RE_CREATE _TEMP/EXTRACTED !!!  %%%%%%%%%%%%%%%%%%]])
+            H.mkdir([[./_TEMP/EXTRACTED]])
           end
           
           -- clear files
@@ -14249,7 +14250,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
             -- print("ModScriptEXML_table = "..#ModScriptEXML_table)
             
             for i=1,#ModScriptEXML_table do
-              H.CopyFile([[..\ModScript\]]..ModScriptEXML_table[i],[[.\MOD\]]..ModScriptEXML_table[i]..[[*]],H.paramFiles)
+              H.CopyFile([[../ModScript/]]..ModScriptEXML_table[i],[[./MOD/]]..ModScriptEXML_table[i]..[[*]],H.paramFiles)
             end
           end
           -- END: This DO-END is NOT REDUNDANT, also see below
@@ -14297,7 +14298,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
         if H.gDEBUG_CheckTables then H.CheckTables("LISTING: BEFORE Saving/Discarding: ") end
 
         local EXML_list = {}
-        EXML_list = H.ListDir(EXML_list,[[MOD\]],false,true) -- MOD\ makes it easier to remove later on
+        EXML_list = H.ListDir(EXML_list,[[MOD/]],false,true) -- MOD\ makes it easier to remove later on
         
         -- print(" = = = = = List of files in MOD")
         -- for i=1,#EXML_list do
@@ -14310,12 +14311,12 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           local fileMOD = EXML_list[i]
           if strfind(fileMOD,".MXML",1,true) then            
             -- printf("-  fileMOD = %3d: %s",i,fileMOD)
-            local fileEXML = string.gsub(fileMOD,[[MOD\\]],""):gsub([[/]],[[\]])
+            local fileEXML = string.gsub(fileMOD,[[MOD/]],"")
             local fileLessEXML = strsub(fileEXML,1,-6)
             
             if H.linkedFiles[fileLessEXML] then
               -- silently delete the file
-              H.DeleteFile([[.\]]..fileMOD,false)
+              H.DeleteFile([[./]]..fileMOD,false)
             end
             
             if H.EXMLorgTable[fileLessEXML] and H.EXMLmodTable[fileLessEXML] then
@@ -14325,14 +14326,14 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
               if H.EXMLmodTable[fileLessEXML][1] == "REMOVE" then -- looks like this is NOT USED
                 print("       "..H._zBRIGHTGREEN..">>> "..H._zBRIGHTORANGE.."Discarding "..H._zBRIGHTGREEN..fileEXML..H._zDEFAULT)
                 H.Report("","    'Discarded': "..fileEXML)
-                H.DeleteFile([[.\]]..fileMOD,false)
+                H.DeleteFile([[./]]..fileMOD,false)
                 if H.WDEBUG then H.WFAK("REMOVE: Set EXMLmodTable to NIL") end
                 H.EXMLmodTable[fileLessEXML] = nil
 
               elseif table.concat(H.EXMLorgTable[fileLessEXML]) == table.concat(H.EXMLmodTable[fileLessEXML]) then
                 print("       "..H._zBRIGHTGREEN.."==> "..H._zBRIGHTORANGE.."Discarding "..H._zBRIGHTGREEN..fileEXML..H._zDEFAULT)
                 H.Report("","    'Discarded': "..fileEXML)
-                H.DeleteFile([[.\]]..fileMOD,false)
+                H.DeleteFile([[./]]..fileMOD,false)
                 if H.WDEBUG then H.WFAK("EXMLorg == EXMLmod: Set EXMLmodTable to NIL") end
                 H.EXMLmodTable[fileLessEXML] = nil
 
@@ -14358,14 +14359,14 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
                 
                 -- handle GLOBALS also in root
                 -- MBIN in root, EXML in globals folder              
-                if strfind(fileMOD,[[GLOBALS\]],1,true) and H.GetExtensionFromFilePath(fileMOD):upper() == ".MXML" then
-                  H.WriteToFile(H.EXMLmodTable[fileLessEXML], [[.\]]..fileMOD:gsub([[GLOBALS\]],""))
+                if strfind(fileMOD,[[GLOBALS/]],1,true) and H.GetExtensionFromFilePath(fileMOD):upper() == ".MXML" then
+                  H.WriteToFile(H.EXMLmodTable[fileLessEXML], [[./]]..fileMOD:gsub([[GLOBALS/]],""))
                   -- remove copy from GLOBALS folder
                   H.DeleteFile(fileMOD,false,true)
                   -- remove GOLBALS folder, if empty
-                  lfs.rmdir([[.\MOD\GLOBALS]])
+                  lfs.rmdir([[./MOD/GLOBALS]])
                 else
-                  H.WriteToFile(H.EXMLmodTable[fileLessEXML], [[.\]]..fileMOD)
+                  H.WriteToFile(H.EXMLmodTable[fileLessEXML], [[./]]..fileMOD)
                 end
                 
                 if H.WDEBUG then H.WFAK("Saved to disk: Set EXMLmodTable to NIL") end
@@ -14390,13 +14391,13 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
             if v == "REMOVE" then -- looks like this is NOT USED
               print("       "..H._zBRIGHTGREEN.."--> "..H._zBRIGHTORANGE.."Discarding "..H._zBRIGHTGREEN..kExt..H._zDEFAULT)
               H.Report("","    'Discarded': "..kExt)
-              H.DeleteFile([[.\MOD\]]..kExt,false)
+              H.DeleteFile([[./MOD/]]..kExt,false)
             
             else
               if not H.gIs_LEAN_MODE then
                 print("       "..H._zBRIGHTGREEN.."-->     "..H._zBRIGHTORANGE.."Saving "..H._zBRIGHTGREEN..kExt..H._zDEFAULT)
               end
-              H.mkdir([[.\MOD\]]..H.GetFolderPathFromFilePath(kExt))
+              H.mkdir([[./MOD/]]..H.GetFolderPathFromFilePath(kExt))
               
               -- Wbertro: NOT necessary for these script created files
               -- clone for MXMLtoEXML
@@ -14417,7 +14418,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
               -- handle CUSTOM LANGUAGE files
               -- if not H.gFastPAKlist[kExt] then
                 -- a CUSTOM file
-                if strfind(k,[[LANGUAGE\]],1,true) then
+                if strfind(k,[[LANGUAGE/]],1,true) then
                   -- a CUSTOM LANGUAGE file, record it
                   H.customLanguageFiles[#H.customLanguageFiles+1] = k
                 end
@@ -14425,12 +14426,12 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
               
               -- handle GLOBALS also in root
               -- MBIN in root, EXML in globals folder
-              if strfind(kExt,[[GLOBALS\]],1,true) and H.GetExtensionFromFilePath(kExt):upper() == ".MXML" then
+              if strfind(kExt,[[GLOBALS/]],1,true) and H.GetExtensionFromFilePath(kExt):upper() == ".MXML" then
                 -- write it to root
-                H.WriteToFile(v, [[.\MOD\]]..kExt:gsub([[^GLOBALS\]],""))
+                H.WriteToFile(v, [[./MOD/]]..kExt:gsub([[^GLOBALS/]],""))
                 -- no need to remove the file and the GLOBALS folder, it was never there (just in memory)
               else
-                H.WriteToFile(v, [[.\MOD\]]..kExt)
+                H.WriteToFile(v, [[./MOD/]]..kExt)
               end
               
               H.Report("","    -->        'Saved': "..kExt)
@@ -14463,15 +14464,15 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
         
         -- XXXXXXXXXXXXXXXX  MBINCompiler.exe  XXXXXXXXXXXXXXXXXX
         if H.WDEBUG then H.WFAK("Just before calling MBINCompiler_C") end
-        -- local status,result = H.MBINCompiler_C([[.\MOD]],H.gIs_LEAN_MODE)
-        local status,result = H.MBINCompiler_C([[.\MOD]],true)
+        -- local status,result = H.MBINCompiler_C([[./MOD]],H.gIs_LEAN_MODE)
+        local status,result = H.MBINCompiler_C([[./MOD]],true)
         
         H.switchBACK = false
         if status ~= "OK" and not gIsCompilerVersionsEqual then
           if H.UpdateMODDER_Helper then
             -- for MODDERS
             -- arg MUST be global
-            arg[1] = "..\\" -- path to REPORT.lua
+            arg[1] = "../" -- path to REPORT.lua
             arg[2] = "" -- path to MODBUILDER
             arg[3] = "Compiling" -- a message
             arg[4] = "keepOpen" -- do NOT close Report
@@ -14485,7 +14486,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           end
 
           H.SwitchToOtherMBINCompiler(H,"AMUMSS")
-          status,result = H.MBINCompiler_C([[.\MOD]],true)
+          status,result = H.MBINCompiler_C([[./MOD]],true)
           H.switchBACK = true
           -- SwitchBackToDeclaredMBINCompiler(H,false)
         end
@@ -14514,7 +14515,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
         end
         
         --always check the log, arg MUST be global
-        arg[1] = "..\\" -- path to REPORT.lua
+        arg[1] = "../" -- path to REPORT.lua
         arg[2] = "" -- path to MODBUILDER
         arg[3] = "Compiling" -- a message
         arg[4] = "keepOpen" -- do NOT close Report
@@ -14532,7 +14533,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
         end
         
         -- this file is never needed
-        H.DeleteFile([[.\MOD\LocTable.MBIN]])
+        H.DeleteFile([[./MOD/LocTable.MBIN]])
         --***************** MBINCOMPILER is DONE ***************************
         H.Dprintf(H._zWHITEonDARKCYAN.."At "..H.dClock().." After MBINCompiler (%.0fKb)"..H._zDEFAULT,collectgarbage("count"))
                   
@@ -14697,7 +14698,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
         H.DEBUG_ScriptContent_print("Before get list of files in MODBUILDER\\MOD")
         -- check in MOD if we really have something to pak beside the script
         local fileList = {}
-        fileList = H.ListDir(fileList,[[.\MOD]],nil,true,false)
+        fileList = H.ListDir(fileList,[[./MOD]],nil,true,false)
         
         local foundFilesTopak = false
         if #fileList > 0 then
@@ -14743,7 +14744,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           elseif H.BackupType == "NONE" then
             -- always a folder
             H.backupEXT = ""
-            H.CopyFlag = [[\]]
+            H.CopyFlag = [[/]]
           else
             print(H.gcWARNING.."@@@ Bad -BackupType option in BUILDMOD_AUTO.bat, using PAK "..H._zDEFAULT)
             H.Report("","Bad -BackupType option in BUILDMOD_AUTO.bat, using PAK","WARNING")
@@ -14751,7 +14752,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           -- H.printf("H.backupEXT = [%s]",H.backupEXT)
           -- H.printf("H.CopyFlag  = [%s]",H.CopyFlag)
           
-          local _cDestination = [[..\ModBackups\]]..prefix..[[IncrementalBuilds]]
+          local _cDestination = [[../ModBackups/]]..prefix..[[IncrementalBuilds]]
           -- remove .pak
           local _cFilename = string.gsub(_cMOD_FILENAME,"%.pak",""):gsub([[%.PAK]],"")
           -- H.printf("_cFilename = [%s]",_cFilename)
@@ -14772,7 +14773,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           H.nextFilenameNum = maxIncrementalBuilds
           
           -- print("current dir = ["..lfs.currentdir().."]")
-          local newestMaxFilename = _cDestination..[[\]].._cFilename.."_("..maxIncrementalBuilds..")"..H.backupEXT --.._cMOD_AUTHOR
+          local newestMaxFilename = _cDestination..[[/]].._cFilename.."_("..maxIncrementalBuilds..")"..H.backupEXT --.._cMOD_AUTHOR
           -- H.printf("A: newestMaxFilename = [%s]",newestMaxFilename)
 
           if (H.backupEXT == "" and H.IsDirExist(newestMaxFilename)) or H.IsFileExist(newestMaxFilename) then
@@ -14781,22 +14782,22 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
             -- to make room for the new (maxIncrementalBuilds is newest)
             
             if H.backupEXT == "" then
-              H.DeleteDir(_cDestination..[[\]].._cFilename.."_(0)")
+              H.DeleteDir(_cDestination..[[/]].._cFilename.."_(0)")
             else
-              H.DeleteFile(_cDestination..[[\]].._cFilename.."_(0)"..H.backupEXT) --.._cMOD_AUTHOR
+              H.DeleteFile(_cDestination..[[/]].._cFilename.."_(0)"..H.backupEXT) --.._cMOD_AUTHOR
             end
-            -- H.printf("A: Deleted = [%s]",_cDestination..[[\]].._cFilename.."_(0)"..H.backupEXT.."]") --.._cMOD_AUTHOR
+            -- H.printf("A: Deleted = [%s]",_cDestination..[[/]].._cFilename.."_(0)"..H.backupEXT.."]") --.._cMOD_AUTHOR
             -- H.WFAK("A:...")
             
             --    rename all others paks from 1->maxIncrementalBuilds to 0->maxIncrementalBuilds-1
             for i=0,maxIncrementalBuilds-1 do
-              local nextFilename = _cDestination..[[\]].._cFilename..[[_(]]..(i+1)..[[)]]..H.backupEXT --.._cMOD_AUTHOR
+              local nextFilename = _cDestination..[[/]].._cFilename..[[_(]]..(i+1)..[[)]]..H.backupEXT --.._cMOD_AUTHOR
               
               if (H.backupEXT == "" and H.IsDirExist(nextFilename)) or H.IsFileExist(nextFilename) then
                 -- H.printf("A:      nextFilename = [%s]",nextFilename)
                 -- H.DeleteFile(_cFilename..[[_(]]..i..[[).pak]]) --.._cMOD_AUTHOR
                 -- rename i+1 to i
-                local cmd = [[ren "]]..nextFilename..[[" "]].._cFilename..[[_(]]..i..[[)]]..H.backupEXT --..[[" 1>NUL 2>NUL]] --.._cMOD_AUTHOR
+                local cmd = [[mv "]]..nextFilename..[[" "]].._cFilename..[[_(]]..i..[[)]]..H.backupEXT..[[" >/dev/null 2>&1]]
                 -- print("A: cmd = ["..cmd.."]")
                 H.NewThread(cmd)
 -- H.WFAK("Just renamed cmd: ["..cmd.."]")            
@@ -14810,7 +14811,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
             -- we just need to find the last one
             H.nextFilenameNum = 0
             for i=0,maxIncrementalBuilds do
-              local nextFilename = _cDestination..[[\]].._cFilename..[[_(]]..i..[[)]]..H.backupEXT --.._cMOD_AUTHOR
+              local nextFilename = _cDestination..[[/]].._cFilename..[[_(]]..i..[[)]]..H.backupEXT --.._cMOD_AUTHOR
               -- print("B:      nextFilename = ["..nextFilename.."]")
               if (H.backupEXT == "" and H.IsDirExist(nextFilename)) or H.IsFileExist(nextFilename) then
                 -- print("                  exist")
@@ -14823,7 +14824,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           -- H.printf("C: H.nextFilenameNum = [%s]",H.nextFilenameNum)
           
           local nextFnum = H.nextFilenameNum + 1
-          local nextF = _cDestination..[[\]].._cFilename..[[_(]]..nextFnum..[[)]]..H.backupEXT  --.._cMOD_AUTHOR
+          local nextF = _cDestination..[[/]].._cFilename..[[_(]]..nextFnum..[[)]]..H.backupEXT  --.._cMOD_AUTHOR
           while (H.backupEXT == "" and H.IsDirExist(nextF)) or H.IsFileExist(nextF) do
             -- H.printf("C: nextF = [%s]",nextF)
             if H.backupEXT == "" then
@@ -14832,12 +14833,12 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
               H.DeleteFile(nextF)
             end
             nextFnum = nextFnum + 1
-            nextF = _cDestination..[[\]].._cFilename..[[_(]]..nextFnum..[[)]]..H.backupEXT --.._cMOD_AUTHOR
+            nextF = _cDestination..[[/]].._cFilename..[[_(]]..nextFnum..[[)]]..H.backupEXT --.._cMOD_AUTHOR
           end
           -- H.WFAK("END: HANDLE IncrementalBuilds")            
           -- ***** END: HANDLE IncrementalBuilds maxIncrementalBuilds versions
           
-          local pakDestPathFromMODfolder = [[..\]].._cDestination
+          local pakDestPathFromMODfolder = [[../]].._cDestination
           H.DEBUG_ScriptContent_print(" pakDestPathFromMODfolder = ["..pakDestPathFromMODfolder.."]")
           
           local pakFilename = _cFilename..H.backupEXT --.._cMOD_AUTHOR
@@ -14850,7 +14851,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
             
             -- make sure we do not have 2 CombineMod_ with the same name
             while true do
-              if H.IsFileExist([[..\ModBackups\]]..prefix..[[IncrementalBuilds\]]..pakFilenameInc) then
+              if H.IsFileExist([[../ModBackups/]]..prefix..[[IncrementalBuilds/]]..pakFilenameInc) then
                 index = index + 1
                 pakFilenameInc = _cFilename..tostring(index)..[[_(]]..H.nextFilenameNum..[[)]]..H.backupEXT -- .._cMOD_AUTHOR
               else
@@ -14878,15 +14879,15 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
             end
 
             if H.BackupType == "PAK" then
-              local status = H.psarc_CL("CREATE", [[..\ModBackups\]]..prefix..[[BuildHistory\]], FileName, true, (H.gIs_LEAN_MODE or not H.DEBUG_PSARC))
+              local status = H.psarc_CL("CREATE", [[../ModBackups/]]..prefix..[[BuildHistory/]], FileName, true, (H.gIs_LEAN_MODE or not H.DEBUG_PSARC))
               if status ~= "OK" then
                 print(H.gcWARNING.."@@@ psarc reported: "..status.." "..H._zDEFAULT)
                 -- H.gModScriptFailed[#H.gModScriptFailed+1] = H._bScriptCounter..": ".._bScriptName..[[: Failed to pack files in MODBUILDER\MOD]]
               end
              
             elseif H.BackupType == "7Z" then
-              H.DeleteFile([[..\ModBackups\]]..prefix..[[BuildHistory\]]..FileName..[[.7z]],false)
-              local cmd = [[7z.exe a "..\ModBackups\]]..prefix..[[BuildHistory\]]..FileName..[[" "..\CreatedMODS\]]..FileName:gsub(H.GetExtensionFromFilePath(FileName),"")..[[\" 1>nul 2>nul]]
+              H.DeleteFile([[../ModBackups/]]..prefix..[[BuildHistory/]]..FileName..[[.7z]],false)
+              local cmd = [[7z.exe a "../ModBackups/]]..prefix..[[BuildHistory/]]..FileName..[[" "../CreatedMODS/]]..FileName:gsub(H.GetExtensionFromFilePath(FileName),"")..[[\" >/dev/null 2>&1]]
               -- H.printf("CB==> cmd = [%s]",cmd)
               local state,str,num = os.execute(cmd) --fast and same output as batch
               local success = ""
@@ -14896,12 +14897,12 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
                 success = "zipError"
               end
               if success ~= "OK" then
-                print(H.gcWARNING..[[@@@ 7z.exe could not create backup .7z to ModBackups\]]..prefix..[[BuildHistory\]]..FileName:gsub(H.GetExtensionFromFilePath(FileName),"")..[[ ]]..H._zDEFAULT)
+                print(H.gcWARNING..[[@@@ 7z.exe could not create backup .7z to ModBackups\]]..prefix..[[BuildHistory/]]..FileName:gsub(H.GetExtensionFromFilePath(FileName),"")..[[ ]]..H._zDEFAULT)
               end
               
             elseif H.BackupType == "ZIP" then
-              H.DeleteFile([[..\ModBackups\]]..prefix..[[BuildHistory\]]..FileName..[[.zip]],false)
-              local cmd = [[7z.exe a "..\ModBackups\]]..prefix..[[BuildHistory\]]..FileName..[[" "..\CreatedMODS\]]..FileName:gsub(H.GetExtensionFromFilePath(FileName),"")..[[\" 1>nul 2>nul]]
+              H.DeleteFile([[../ModBackups/]]..prefix..[[BuildHistory/]]..FileName..[[.zip]],false)
+              local cmd = [[7z.exe a "../ModBackups/]]..prefix..[[BuildHistory/]]..FileName..[[" "../CreatedMODS/]]..FileName:gsub(H.GetExtensionFromFilePath(FileName),"")..[[\" >/dev/null 2>&1]]
               -- H.printf("CB==> cmd = [%s]",cmd)
               local state,str,num = os.execute(cmd) --fast and same output as batch
               local success = ""
@@ -14911,13 +14912,13 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
                 success = "zipError"
               end
               if success ~= "OK" then
-                print(H.gcWARNING..[[@@@ 7z.exe could not create backup .zip to ModBackups\]]..prefix..[[BuildHistory\]]..FileName:gsub(H.GetExtensionFromFilePath(FileName),"")..[[ ]]..H._zDEFAULT)
+                print(H.gcWARNING..[[@@@ 7z.exe could not create backup .zip to ModBackups\]]..prefix..[[BuildHistory/]]..FileName:gsub(H.GetExtensionFromFilePath(FileName),"")..[[ ]]..H._zDEFAULT)
               end
               
             elseif H.BackupType == "NONE" then
-              H.DeleteDir([[..\ModBackups\]]..prefix..[[BuildHistory\]]..FileName)
-              H.mkdir([[..\ModBackups\]]..prefix..[[BuildHistory\]]..FileName)
-              H.CopyFile([[..\CreatedMODS\]]..FileName, [[..\ModBackups\]]..prefix..[[BuildHistory\]]..FileName..[[\]], [[/s /y /h /j /EXCLUDE:xcopy_excludeMXML.txt]]) -- with folders and sub-folders
+              H.DeleteDir([[../ModBackups/]]..prefix..[[BuildHistory/]]..FileName)
+              H.mkdir([[../ModBackups/]]..prefix..[[BuildHistory/]]..FileName)
+              H.CopyFile([[../CreatedMODS/]]..FileName, [[../ModBackups/]]..prefix..[[BuildHistory/]]..FileName..[[/]], [[/s /y /h /j /EXCLUDE:xcopy_excludeMXML.txt]]) -- with folders and sub-folders
               
             end
             print("")
@@ -14937,9 +14938,9 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           -- == 3, treat it as an Individual mod, a COMPOSITE combined mod with the name being like: modname == Mod1+Mod2+Mod3.pak
           
           -- source is from ModBackups\IncrementalBuilds
-          -- local _cDestination = [[..\ModBackups\]]..prefix..[[IncrementalBuilds]]
-          local _cDestination = [[..\ModBackups\]]..prefix..[[BuildHistory]]
-          local source = _cDestination..[[\]]..pakFilename
+          -- local _cDestination = [[../ModBackups/]]..prefix..[[IncrementalBuilds]]
+          local _cDestination = [[../ModBackups/]]..prefix..[[BuildHistory]]
+          local source = _cDestination..[[/]]..pakFilename
           
           -- A: AMUMSS\MODBUILDER\MOD: content of the MOD
           -- B: AMUMSS\CreatedMODS: folder of the MOD
@@ -14961,7 +14962,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
             H.pakFilenameIncLessEXT = pakFilenameInc
           end
           
-          -- H.createdMODName = [[..\CreatedMODS\]]..H.pakFilenameLessEXT
+          -- H.createdMODName = [[../CreatedMODS/]]..H.pakFilenameLessEXT
           -- H.mkdir(H.createdMODName)
 
           -- new MODS: copy NODBUILDER\MOD loose files to this new folder
@@ -14976,24 +14977,24 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           end
           
           if H.UpdateMODDER_Helper then
-            -- we need to copy the ORIGINAL _TEMP\DECOMPILED files for this mod into TOOLS\MODDER_Helper\{thismod}\_ORG_MXML
-            local ListFiles = H.ListDir(ListFiles, [[.\MOD]], true, true)
+            -- we need to copy the ORIGINAL _TEMP/DECOMPILED files for this mod into TOOLS\MODDER_Helper\{thismod}\_ORG_MXML
+            local ListFiles = H.ListDir(ListFiles, [[./MOD]], true, true)
             for i=1,#ListFiles do
               -- H.printf("===>> ListFiles[%d] = [%s]",i,ListFiles[i])
               local ext = H.GetExtensionFromFilePath(ListFiles[i]):upper()
               
               if ext == ".MXML" or ext == ".EXML" or ext == ".MBIN" then
-                local tmp = ListFiles[i]:gsub([[.\MOD\]],""):gsub([[%.MXML]],[[.MBIN]]):gsub([[%.EXML]],[[.MBIN]]) 
+                local tmp = ListFiles[i]:gsub([[./MOD/]],""):gsub([[%.MXML]],[[.MBIN]]):gsub([[%.EXML]],[[.MBIN]]) 
                 if strfind(tmp,"GLOBALS.",1,true) or strfind(tmp,".GLOBAL.",1,true) then
-                  tmp = [[GLOBALS\]]..tmp
+                  tmp = [[GLOBALS/]]..tmp
                 end
                 -- H.printf("   tmp = [%s]",tmp)
-                if H.gFastPAKlist[tmp] then
+                if H.FastPakLookup(tmp) then
                   tmp = tmp:gsub([[.EXML]],[[.MXML]]):gsub([[.MBIN]],[[.MXML]])
                   -- H.printf(" - ListFiles[%d] = [%s]",i,tmp)
-                  -- H.printf("source = [%s]",[[..\MODBUILDER\_TEMP\DECOMPILED\]]..tmp)
-                  -- H.printf("  dest = [%s]",[[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\_ORG_MXML\]]..tmp..[[*]])
-                  H.CopyFile([[..\MODBUILDER\_TEMP\DECOMPILED\]]..tmp, [[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\_ORG_MXML\]]..tmp..[[*]],H.paramFilesDir)
+                  -- H.printf("source = [%s]",[[../MODBUILDER/_TEMP/DECOMPILED/]]..tmp)
+                  -- H.printf("  dest = [%s]",[[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/_ORG_MXML/]]..tmp..[[*]])
+                  H.CopyFile([[../MODBUILDER/_TEMP/DECOMPILED/]]..tmp, [[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/_ORG_MXML/]]..tmp..[[*]],H.paramFilesDir)
                 end
               end              
             end -- for i=1,#ListFiles do
@@ -15002,13 +15003,13 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           -- ==================  FOR EVERY TYPE  ==========================
           if H.UpdateMODDER_Helper then
             print([[>>>  Copying files to TOOLS\MODDER_Helper...]])
-            H.CopyFile(H.gPathToModbuilderMod, [[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\]], H.paramFilesDir) -- with folders and sub-folders, exclude .vscode
-            -- cleanup MOD\LocTable.txt
-            -- H.DeleteFile(H.gPathToModbuilderMod..[[\LocTable.txt]],false,true)
+            H.CopyFile(H.gPathToModbuilderMod, [[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/]], H.paramFilesDir) -- with folders and sub-folders, exclude .vscode
+            -- cleanup MOD/LocTable.txt
+            -- H.DeleteFile(H.gPathToModbuilderMod..[[/LocTable.txt]],false,true)
           end
           
           -- copy ALL files in MODBUILDER\MOD to CreatedMODS mod sub-folder
-          H.CopyFile(H.gPathToModbuilderMod, [[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]], H.paramExcMXML) -- with folders and sub-folders, exclude MXML, .vscode
+          H.CopyFile(H.gPathToModbuilderMod, [[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]], H.paramExcMXML) -- with folders and sub-folders, exclude MXML, .vscode
 
           -- create EXMLs and copy to TOOLS\MODDER_Helper and CreatedMODS mod sub-folder (deleting the MBIN)
           -- *********************  Create EXML files
@@ -15030,28 +15031,28 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
 
           -- ================  Handling of script LocTable.txt  =================================================================
           -- path to a possible LocTable.txt in the script folder
-          local scriptTxtPath = [[..\ModScript\]]..H.GetFolderPathFromFilePath(_bScriptName)..[[\LocTable.txt]]
+          local scriptTxtPath = [[../ModScript/]]..H.GetFolderPathFromFilePath(_bScriptName)..[[/LocTable.txt]]
           -- H.printf("==>> scriptTxtPath = [%s]",scriptTxtPath)
           if H.IsFileExist(scriptTxtPath) then
             -- a script LocTable.txt exist
             print("      -> Found a LocTable.txt in script folder")
-            if H.IsFileExist([[.\MOD\LocTable.txt]]) then
-              -- a MOD\LocTable.txt already exist, probably created by the script code
+            if H.IsFileExist([[./MOD/LocTable.txt]]) then
+              -- a MOD/LocTable.txt already exist, probably created by the script code
               print("      -> Found an existing LocTable.txt file in MOD")
               
               scriptTxt = H.LoadFileData(scriptTxtPath)
               -- H.printf("==>> Appending scriptTxt = [%s]",scriptTxt)
-              H.WriteToFileAppend([[\n]]..scriptTxt,[[.\MOD\LocTable.txt]])
+              H.WriteToFileAppend([[\n]]..scriptTxt,[[./MOD/LocTable.txt]])
             else
               -- copy script LocTable.txt to MODBUILDER\MOD
               -- print("      -> File NOT in MOD, copying to MOD")
-              H.CopyFile(scriptTxtPath, [[.\MOD\LocTable.txt*]], H.paramFiles)
+              H.CopyFile(scriptTxtPath, [[./MOD/LocTable.txt*]], H.paramFiles)
             end
           end
 
           -- path to a possible LocTable.MXML in the script folder
-          local scriptTxtPathmxml = [[..\ModScript\]]..H.GetFolderPathFromFilePath(_bScriptName)..[[\LocTable.mxml]]
-          local scriptTxtPath = [[..\ModScript\]]..H.GetFolderPathFromFilePath(_bScriptName)..[[\LocTable.MXML]]
+          local scriptTxtPathmxml = [[../ModScript/]]..H.GetFolderPathFromFilePath(_bScriptName)..[[/LocTable.mxml]]
+          local scriptTxtPath = [[../ModScript/]]..H.GetFolderPathFromFilePath(_bScriptName)..[[/LocTable.MXML]]
           
           os.rename(scriptTxtPathmxml,scriptTxtPath)
 -- H.WFAK()          
@@ -15059,17 +15060,17 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           if H.IsFileExist(scriptTxtPath) then
             -- a script LocTable.MXML exist
             print("      -> Found a LocTable.MXML in script folder")
-            local txtTable = H.CreateLocTableTXTFromXML(H.ParseTextFileIntoTable([[.\MOD\LocTable.MXML]]),"")
+            local txtTable = H.CreateLocTableTXTFromXML(H.ParseTextFileIntoTable([[./MOD/LocTable.MXML]]),"")
             
-            if H.IsFileExist([[.\MOD\LocTable.txt]]) then
-              -- a MOD\LocTable.txt already exist, probably created by the script code
+            if H.IsFileExist([[./MOD/LocTable.txt]]) then
+              -- a MOD/LocTable.txt already exist, probably created by the script code
               print("      => Found an existing LocTable.txt file in MOD")
               
-              H.WriteToFileAppend(txtTable,[[.\MOD\LocTable.txt]])
+              H.WriteToFileAppend(txtTable,[[./MOD/LocTable.txt]])
             else
               -- create script LocTable.MXML as a LocTable.txt to MODBUILDER\MOD
               -- print("      -> File NOT in MOD, creating to MOD")
-              H.WriteToFile(txtTable,[[.\MOD\LocTable.txt]])
+              H.WriteToFile(txtTable,[[./MOD/LocTable.txt]])
             end
           end
           -- H.WFAK("==>> END: Handling script LocTable.txt")
@@ -15091,10 +15092,10 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
             if H.linkedFiles[k] == nil and H.clonedMXMLmodTable[k] then
               -- NOT a linked file and in the clonedMXMLmodTable, OK to proceed
 -- H.printf("   v = [%s]",v)
-              -- H.printf([=[   path = [%s]]=],H.gPathToModbuilderMod..strgsub(k,[[GLOBALS\]],"")..[[.MBIN]])
-              if H.IsFileExist(H.gPathToModbuilderMod..strgsub(k,[[GLOBALS\]],"")..[[.MBIN]]) then
+              -- H.printf([=[   path = [%s]]=],H.gPathToModbuilderMod..strgsub(k,[[GLOBALS/]],"")..[[.MBIN]])
+              if H.IsFileExist(H.gPathToModbuilderMod..strgsub(k,[[GLOBALS/]],"")..[[.MBIN]]) then
                 -- the MXML file is a valid one
-                if H.gFastPAKlist[v:gsub([[%.MXML]],[[.MBIN]])] then
+                if H.FastPakLookup(v:gsub([[%.MXML]],[[.MBIN]])) then
                   -- a genuine NMS file
                   H.printf(">>>  "..H._zBRIGHTORANGE.."Creating"..H._zDEFAULT.." EXML from file: "..H._zBRIGHTGREEN.."%s"..H._zDEFAULT,v)
                   H.Report("","=== Created EXML from file: ["..v.."]")
@@ -15108,21 +15109,21 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
                       end
                     end
                     
-                    local tmp3 = [[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\_MXMLtoEXML\]]..k..[[.EXML]]
+                    local tmp3 = [[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/_MXMLtoEXML/]]..k..[[.EXML]]
 -- H.printf("  tmp3 = [%s]",tmp3)
                     -- always try to create the folder
                     H.mkdir(H.GetFolderPathFromFilePath(tmp3))
                     H.WriteToFile(exml, tmp3)
                     
-                    -- local tmp6 = [[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\LANGUAGE\]]..k..[[.MXML]]
+                    -- local tmp6 = [[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/LANGUAGE/]]..k..[[.MXML]]
 -- H.printf("  tmp6 = [%s]",tmp6)
-                    if strfind(tmp3,[[\_MXMLtoEXML\LANGUAGE\]],1,true) then
-                    -- if strfind(tmp6,[[\LANGUAGE\]],1,true) then
+                    if strfind(tmp3,[[/_MXMLtoEXML/LANGUAGE/]],1,true) then
+                    -- if strfind(tmp6,[[/LANGUAGE/]],1,true) then
                       -- found a LANGUAGE file: make it a LocTable.txt instead
                       
                       local txt = H.CreateLocTableTXTFromXML(exml,"")
                       
-                      local tmp5 = [[.\MOD\LocTable.txt]]
+                      local tmp5 = [[./MOD/LocTable.txt]]
                       -- H.printf("  tmp5 = [%s]",tmp5)
                       
                       if H.IsFileExist(tmp5) then
@@ -15134,7 +15135,7 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
                       
                     else
                       
-                      local tmp4 = [[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]]..k..[[.EXML]]
+                      local tmp4 = [[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]]..k..[[.EXML]]
                       -- H.printf("  tmp4 = [%s]",tmp4)
 
                       H.mkdir(H.GetFolderPathFromFilePath(tmp4))
@@ -15145,16 +15146,16 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
                       -- delete the MBIN in CreatedMODS
                       if strfind(v,"GLOBALS.",1,true) or strfind(v,".GLOBAL.",1,true) then
                         -- this is a GLOBALS
-                        H.DeleteFile([[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]]..k:gsub([[GLOBALS\]],"")..[[.MBIN]],false,true)
+                        H.DeleteFile([[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]]..k:gsub([[GLOBALS/]],"")..[[.MBIN]],false,true)
                       else
-                        H.DeleteFile([[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]]..k..[[.MBIN]],false,true)
+                        H.DeleteFile([[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]]..k..[[.MBIN]],false,true)
                       end
                     else
                       if strfind(v,"GLOBALS.",1,true) or strfind(v,".GLOBAL.",1,true) then
                         -- this is a GLOBALS
-                        H.DeleteFile([[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]]..k:gsub([[GLOBALS\]],"")..[[.EXML]],false,true)
+                        H.DeleteFile([[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]]..k:gsub([[GLOBALS/]],"")..[[.EXML]],false,true)
                       else
-                        H.DeleteFile([[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]]..k..[[.EXML]],false,true)
+                        H.DeleteFile([[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]]..k..[[.EXML]],false,true)
                       end
                       print(">>> "..H.gcNOTICE..[[ [NOTICE] Could not create a valid EXML, keeping MBIN in CreatedMODS ]]..H._zDEFAULT)
                       H.Report("",[[>>> Could not create a valid EXML, keeping MBIN in CreatedMODS]],"NOTICE")
@@ -15174,22 +15175,22 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
           -- *********************  END: Create EXML files
 -- H.WFAK("WAITING before <Create LocTable.MXML from LocTable.txt>")
           -- Create LocTable.MXML from LocTable.txt
-          if H.IsFileExist([[.\MOD\LocTable.txt]]) then
+          if H.IsFileExist([[./MOD/LocTable.txt]]) then
             print("")
             print("==> Found LocTable.txt, "..H._zBRIGHTORANGE.."creating"..H._zDEFAULT..H._zBRIGHTGREEN.." LocTable.MXML"..H._zDEFAULT.."...")
             print("")
             H.Report("","==> Found LocTable.txt, created LocTable.MXML...")
           
-            if H.IsFileExist([[.\MOD\LocTable.MXML]]) then
+            if H.IsFileExist([[./MOD/LocTable.MXML]]) then
               -- file must have been created by the script
               -- we need to append this LocTable.MXML to our LocTable.txt
-              local txt = H.CreateLocTableTXTFromXML(H.ParseTextFileIntoTable([[.\MOD\LocTable.MXML]]),"")
-              H.WriteToFileAppend(txt,[[.\MOD\LocTable.txt]])
+              local txt = H.CreateLocTableTXTFromXML(H.ParseTextFileIntoTable([[./MOD/LocTable.MXML]]),"")
+              H.WriteToFileAppend(txt,[[./MOD/LocTable.txt]])
             end
             
             -- HERE, ALL info has been appended in the LocTable.txt, we can create the MXML
             
-            local locTableTxt = H.ParseTextFileIntoTable([[.\MOD\LocTable.txt]])
+            local locTableTxt = H.ParseTextFileIntoTable([[./MOD/LocTable.txt]])
             -- H.printf("==>> #locTableTxt = %d",#locTableTxt)
             
             local loc = H.CreateLocTableMXMLfromTXT(locTableTxt)
@@ -15201,36 +15202,36 @@ function ProcessScript(H, NMS_MOD_DEFINITION_CONTAINER, IsMulti_pak, _bScriptNam
 -- end
 -- print("== == == == == ==")
 -- print()
--- H.WFAK([[WAITING before <writing to .\MOD\LocTable.MXML>]])
+-- H.WFAK([[WAITING before <writing to ./MOD/LocTable.MXML>]])
             
-            H.WriteToFile(loc, [[.\MOD\LocTable.MXML]])
+            H.WriteToFile(loc, [[./MOD/LocTable.MXML]])
             
             -- recreate the final LocTable.txt from the MXML
             local txt = H.CreateLocTableTXTFromXML(loc)
-            H.WriteToFile(txt,[[.\MOD\LocTable.txt]])
+            H.WriteToFile(txt,[[./MOD/LocTable.txt]])
             
-          elseif H.IsFileExist([[.\MOD\LocTable.MXML]]) then
+          elseif H.IsFileExist([[./MOD/LocTable.MXML]]) then
             -- no LocTable.txt exist: let us create a LocTable.txt from this LocTable.MXML
-            local txt = H.CreateLocTableTXTFromXML(H.ParseTextFileIntoTable([[.\MOD\LocTable.MXML]]))
-            H.WriteToFile(txt,[[.\MOD\LocTable.txt]])
+            local txt = H.CreateLocTableTXTFromXML(H.ParseTextFileIntoTable([[./MOD/LocTable.MXML]]))
+            H.WriteToFile(txt,[[./MOD/LocTable.txt]])
           end
           
           -- -- FOR DEBUG ONLY
-            -- H.CopyFile(H.gPathToModbuilderMod..[[LocTable.txt]], [[..\TOOLS\MODDER_Helper\LocTable.txt*]], H.paramFiles) -- only ALL files
-            -- H.CopyFile(H.gPathToModbuilderMod..[[LocTable.MXML]], [[..\TOOLS\MODDER_Helper\LocTable.MXML*]], H.paramFiles) -- only ALL files
+            -- H.CopyFile(H.gPathToModbuilderMod..[[LocTable.txt]], [[../TOOLS/MODDER_Helper/LocTable.txt*]], H.paramFiles) -- only ALL files
+            -- H.CopyFile(H.gPathToModbuilderMod..[[LocTable.MXML]], [[../TOOLS/MODDER_Helper/LocTable.MXML*]], H.paramFiles) -- only ALL files
           
           -- handle LocTable exception
 
-            -- local tmp6 = [[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\LANGUAGE\]]..k..[[.MXML]]
+            -- local tmp6 = [[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/LANGUAGE/]]..k..[[.MXML]]
 -- H.printf("  tmp6 = [%s]",tmp6)
-            -- if strfind(tmp6,[[\LANGUAGE\]],1,true) then
+            -- if strfind(tmp6,[[/LANGUAGE/]],1,true) then
             
 -- H.WFAK("WAITING before <Checking if CreatedMODS/modname/LANGUAGE folder exist>")
-            if H.IsDirExist([[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\LANGUAGE\]]) then
+            if H.IsDirExist([[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/LANGUAGE/]]) then
 H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring(H.IsEXML_CREATE_GLOBAL))
               if #H.customLanguageFiles == 0 and H.IsEXML_CREATE_GLOBAL then
                 -- we do not need this folder, remove LANGUAGE sub-folder from CreatedMODS mod folder
-                H.DeleteDir([[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\LANGUAGE]])
+                H.DeleteDir([[../CreatedMODS/]]..H.pakFilenameLessEXT..[[\LANGUAGE]])
                 
               else
   -- WBERTRO: THIS IS NOT DONE
@@ -15240,50 +15241,50 @@ H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring
                 -- if all LANGUAGE files are removed, we can delete the folder
                 
                 -- elseif H.IsEXMLcreateTRUE then
-                      -- local tmp3 = [[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\_MXMLtoEXML\]]..k..[[.EXML]]
+                      -- local tmp3 = [[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/_MXMLtoEXML/]]..k..[[.EXML]]
   -- H.printf("  tmp3 = [%s]",tmp3)
                       -- -- always try to create the folder
                       -- H.mkdir(H.GetFolderPathFromFilePath(tmp3))
                       -- H.WriteToFile(exml, tmp3)
                       
-                      -- -- local tmp6 = [[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\LANGUAGE\]]..k..[[.MXML]]
+                      -- -- local tmp6 = [[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/LANGUAGE/]]..k..[[.MXML]]
   -- -- H.printf("  tmp6 = [%s]",tmp6)
-                      -- if strfind(tmp3,[[\_MXMLtoEXML\LANGUAGE\]],1,true) then
+                      -- if strfind(tmp3,[[/_MXMLtoEXML/LANGUAGE/]],1,true) then
 
                   -- -- We should check if each individual LANGUAGE file is 
 -- H.printf("H.customLanguageFiles = %d",#H.customLanguageFiles)
-                -- H.CopyFile([[Enable MXML Output]], [[..\CreatedMODS\]]..H.AMUMSSstring..[[EnableMXMLOutput\]],H.paramFilesDir)
+                -- H.CopyFile([[Enable MXML Output]], [[../CreatedMODS/]]..H.AMUMSSstring..[[EnableMXMLOutput/]],H.paramFilesDir)
                 
               end
             end
 -- H.WFAK("WAITING after <Checking if CreatedMODS/modname/LANGUAGE folder exist>")
             
-            H.CopyFile(H.gPathToModbuilderMod..[[LocTable.txt]], [[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\LocTable.txt*]], H.paramFiles) -- only ALL files
-            H.CopyFile(H.gPathToModbuilderMod..[[LocTable.txt]], [[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\LocTable.txt*]], H.paramFiles) -- only ALL files
+            H.CopyFile(H.gPathToModbuilderMod..[[LocTable.txt]], [[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/LocTable.txt*]], H.paramFiles) -- only ALL files
+            H.CopyFile(H.gPathToModbuilderMod..[[LocTable.txt]], [[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/LocTable.txt*]], H.paramFiles) -- only ALL files
 
-            H.CopyFile(H.gPathToModbuilderMod..[[LocTable.MXML]], [[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\LocTable.MXML*]], H.paramFiles) -- only ALL files
-            H.CopyFile(H.gPathToModbuilderMod..[[LocTable.MXML]], [[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\LocTable.MXML*]], H.paramFiles) -- only ALL files
+            H.CopyFile(H.gPathToModbuilderMod..[[LocTable.MXML]], [[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/LocTable.MXML*]], H.paramFiles) -- only ALL files
+            H.CopyFile(H.gPathToModbuilderMod..[[LocTable.MXML]], [[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/LocTable.MXML*]], H.paramFiles) -- only ALL files
           -- END: handle LocTable exception
           
           if H.EXPORTED then
-            if not H.IsDirExist([[..\CreatedMODS\Enable MXML Output\]]) then
+            if not H.IsDirExist([[../CreatedMODS/Enable MXML Output\]]) then
               -- TURN ON NMS EXPORTED FEATURE
-              H.CopyFile([[Enable MXML Output]], [[..\CreatedMODS\]]..H.AMUMSSstring..[[EnableMXMLOutput\]],H.paramFilesDir)
+              H.CopyFile([[Enable MXML Output]], [[../CreatedMODS/]]..H.AMUMSSstring..[[EnableMXMLOutput/]],H.paramFilesDir)
             end
             
-            local ListFiles = H.ListDir(ListFiles, [[..\CreatedMODS\]]..H.pakFilenameLessEXT, true, true)
+            local ListFiles = H.ListDir(ListFiles, [[../CreatedMODS/]]..H.pakFilenameLessEXT, true, true)
             for i=1,#ListFiles do
               local ext = H.GetExtensionFromFilePath(ListFiles[i]):upper()
               if ext == ".MBIN" or ext == ".EXML" then
-                local tmp = ListFiles[i]:gsub(H.escapeMagicString([[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]]),""):gsub([[%.EXML]],[[.MBIN]])
-                if not strfind(tmp,[[^GLOBALS\]]) and (strfind(tmp,"GLOBALS.",1,true) or strfind(tmp,".GLOBAL.",1,true)) then
-                  tmp = [[GLOBALS\]]..tmp
+                local tmp = ListFiles[i]:gsub(H.escapeMagicString([[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]]),""):gsub([[%.EXML]],[[.MBIN]])
+                if not strfind(tmp,[[^GLOBALS/]]) and (strfind(tmp,"GLOBALS.",1,true) or strfind(tmp,".GLOBAL.",1,true)) then
+                  tmp = [[GLOBALS/]]..tmp
                 end
-                if H.gFastPAKlist[tmp] then
+                if H.FastPakLookup(tmp) then
                   tmp = tmp:gsub([[%.MBIN]],[[.EXML]])
                   -- H.printf(" - ListFiles[%d] = [%s]",i,tmp)
-                  -- H.printf("  dest = [%s]",[[..\CreatedMODS\]]..H.AMUMSSstring..[[EXPORT_THESE\]]..tmp..[[*]])
-                  H.CopyFile([[.\MODDER_Snippets\TEMPLATE.EXML]], [[..\CreatedMODS\]]..H.AMUMSSstring..[[EXPORT_THESE\]]..tmp..[[*]], H.paramFiles)
+                  -- H.printf("  dest = [%s]",[[../CreatedMODS/]]..H.AMUMSSstring..[[EXPORT_THESE/]]..tmp..[[*]])
+                  H.CopyFile([[./MODDER_Snippets/TEMPLATE.EXML]], [[../CreatedMODS/]]..H.AMUMSSstring..[[EXPORT_THESE/]]..tmp..[[*]], H.paramFiles)
                 end
               end
             end
@@ -15291,8 +15292,8 @@ H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring
           end
           
           -- MOD->ModBackups->modFolder
-          H.DeleteDir([[..\ModBackups\]]..H.pakFilenameLessEXT)
-          H.CopyFile(H.gPathToModbuilderMod, [[..\ModBackups\]]..H.pakFilenameLessEXT..[[\]], H.paramExcMXML)
+          H.DeleteDir([[../ModBackups/]]..H.pakFilenameLessEXT)
+          H.CopyFile(H.gPathToModbuilderMod, [[../ModBackups/]]..H.pakFilenameLessEXT..[[/]], H.paramExcMXML)
           -- ==================  END: FOR EVERY TYPE  ==========================
           
           -- if H._bGlobalCOMBINE_MOD_TYPE == 2 and not IsCOMBINE_MODS_flag then --like CombinedMod_(x).pak
@@ -15301,22 +15302,22 @@ H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring
             -- H.printf("A: pakFilenameInc = [%s]",pakFilenameInc)
 
             -- Mod pak content required when distinct combined
-            H.CopyFile("COMBINED_CONTENT_LIST.txt", [[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
+            H.CopyFile("COMBINED_CONTENT_LIST.txt", [[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
             
             if H.UpdateMODDER_Helper then
-              H.CopyFile("COMBINED_CONTENT_LIST.txt", [[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
+              H.CopyFile("COMBINED_CONTENT_LIST.txt", [[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
             end
             
-            CreateCompressedBackup(H, pakFilename, [[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]])
+            CreateCompressedBackup(H, pakFilename, [[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]])
 
-            H.CopyFile(source,[[..\ModBackups\]]..prefix..[[IncrementalBuilds\]]..pakFilenameInc..H.CopyFlag,H.paramFiles)              
-            -- H.CopyFile(source,[[..\ModBackups\]]..prefix..[[BuildHistory\]]..pakFilenameInc..H.CopyFlag,H.paramFiles)
+            H.CopyFile(source,[[../ModBackups/]]..prefix..[[IncrementalBuilds/]]..pakFilenameInc..H.CopyFlag,H.paramFiles)              
+            -- H.CopyFile(source,[[../ModBackups/]]..prefix..[[BuildHistory/]]..pakFilenameInc..H.CopyFlag,H.paramFiles)
             
             -- Mod pak content required when distinct combined
-            H.CopyFile("COMBINED_CONTENT_LIST.txt",[[..\ModBackups\]]..prefix..[[IncrementalBuilds\]]..pakFilenameInc..[[_content.txt*]],H.paramFiles)
-            H.CopyFile("COMBINED_CONTENT_LIST.txt",[[..\ModBackups\]]..prefix..[[BuildHistory\]]..pakFilename..[[_content.txt*]],H.paramFiles)
+            H.CopyFile("COMBINED_CONTENT_LIST.txt",[[../ModBackups/]]..prefix..[[IncrementalBuilds/]]..pakFilenameInc..[[_content.txt*]],H.paramFiles)
+            H.CopyFile("COMBINED_CONTENT_LIST.txt",[[../ModBackups/]]..prefix..[[BuildHistory/]]..pakFilename..[[_content.txt*]],H.paramFiles)
             
-            -- if H.IsFileExist([[..\ModBackups\]]..prefix..[[BuildHistory\]]..pakFilename) then
+            -- if H.IsFileExist([[../ModBackups/]]..prefix..[[BuildHistory/]]..pakFilename) then
               -- print(">>> Created this MOD: "..H._zBRIGHTORANGE.."'"..H.pakFilenameLessEXT.."'"..H._zDEFAULT)
               -- H.Report("")
               -- H.Report("","Created this MOD: '"..H.pakFilenameLessEXT.."'")
@@ -15327,22 +15328,22 @@ H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring
             -- H.printf("A: pakFilenameInc = [%s]",pakFilenameInc)
 
             -- Mod pak content required when distinct combined
-            H.CopyFile("COMBINED_CONTENT_LIST.txt",[[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
+            H.CopyFile("COMBINED_CONTENT_LIST.txt",[[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
             
             if H.UpdateMODDER_Helper then
-              H.CopyFile("COMBINED_CONTENT_LIST.txt",[[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
+              H.CopyFile("COMBINED_CONTENT_LIST.txt",[[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
             end
             
-            CreateCompressedBackup(H, pakFilename, [[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]])
+            CreateCompressedBackup(H, pakFilename, [[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]])
 
-            H.CopyFile(source,[[..\ModBackups\]]..prefix..[[IncrementalBuilds]]..pakFilenameInc..H.CopyFlag,H.paramFiles)              
-            -- H.CopyFile(source,[[..\ModBackups\]]..prefix..[[BuildHistory\]]..pakFilenameInc..H.CopyFlag,H.paramFiles)
+            H.CopyFile(source,[[../ModBackups/]]..prefix..[[IncrementalBuilds]]..pakFilenameInc..H.CopyFlag,H.paramFiles)              
+            -- H.CopyFile(source,[[../ModBackups/]]..prefix..[[BuildHistory/]]..pakFilenameInc..H.CopyFlag,H.paramFiles)
             
             -- Mod pak content required when distinct combined
-            H.CopyFile("COMBINED_CONTENT_LIST.txt",[[..\ModBackups\]]..prefix..[[IncrementalBuilds\]]..pakFilenameInc..[[_content.txt*]],H.paramFiles)
-            H.CopyFile("COMBINED_CONTENT_LIST.txt",[[..\ModBackups\]]..prefix..[[BuildHistory\]]..pakFilename..[[_content.txt*]],H.paramFiles)
+            H.CopyFile("COMBINED_CONTENT_LIST.txt",[[../ModBackups/]]..prefix..[[IncrementalBuilds/]]..pakFilenameInc..[[_content.txt*]],H.paramFiles)
+            H.CopyFile("COMBINED_CONTENT_LIST.txt",[[../ModBackups/]]..prefix..[[BuildHistory/]]..pakFilename..[[_content.txt*]],H.paramFiles)
             
-            -- if H.IsFileExist([[..\ModBackups\]]..prefix..[[BuildHistory\]]..pakFilename) then
+            -- if H.IsFileExist([[../ModBackups/]]..prefix..[[BuildHistory/]]..pakFilename) then
               -- print(">>> Created this MOD: "..H._zBRIGHTORANGE.."'"..H.pakFilenameLessEXT.."'"..H._zDEFAULT)
               -- H.Report("")
               -- H.Report("","Created this MOD: '"..H.pakFilenameLessEXT.."'")
@@ -15354,32 +15355,32 @@ H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring
             
             if IsCOMBINE_MODS_flag then
               -- new MODS
-              H.CopyFile("COMBINED_CONTENT_LIST.txt",[[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
+              H.CopyFile("COMBINED_CONTENT_LIST.txt",[[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
               
               if H.UpdateMODDER_Helper then
-                H.CopyFile("COMBINED_CONTENT_LIST.txt",[[..\TOOLS\MODDER_Helper\]]..H.pakFilenameLessEXT..[[\]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
+                H.CopyFile("COMBINED_CONTENT_LIST.txt",[[../TOOLS/MODDER_Helper/]]..H.pakFilenameLessEXT..[[/]]..H.pakFilenameLessEXT..[[_content.txt*]],H.paramFiles)
               end
             end
             
-            CreateCompressedBackup(H, pakFilename, [[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[\]])
+            CreateCompressedBackup(H, pakFilename, [[../CreatedMODS/]]..H.pakFilenameLessEXT..[[/]])
 
-            H.CopyFile(source,[[..\ModBackups\]]..prefix..[[IncrementalBuilds\]]..pakFilenameInc..H.CopyFlag,H.paramFiles) -- ,false
+            H.CopyFile(source,[[../ModBackups/]]..prefix..[[IncrementalBuilds/]]..pakFilenameInc..H.CopyFlag,H.paramFiles) -- ,false
             
             -- if H._bGlobalCOMBINE_MOD_TYPE == 1 or H._bGlobalCOMBINE_MOD_TYPE == 3 or IsCOMBINE_MODS_flag then
             if IsCOMBINE_MODS_flag then
               -- Mod pak content required when combined
-              H.CopyFile("COMBINED_CONTENT_LIST.txt",[[..\ModBackups\]]..prefix..[[IncrementalBuilds\]]..pakFilenameInc..[[_content.txt*]],H.paramFiles)
-              H.CopyFile("COMBINED_CONTENT_LIST.txt",[[..\ModBackups\]]..prefix..[[BuildHistory\]]..pakFilename..[[_content.txt*]],H.paramFiles)
+              H.CopyFile("COMBINED_CONTENT_LIST.txt",[[../ModBackups/]]..prefix..[[IncrementalBuilds/]]..pakFilenameInc..[[_content.txt*]],H.paramFiles)
+              H.CopyFile("COMBINED_CONTENT_LIST.txt",[[../ModBackups/]]..prefix..[[BuildHistory/]]..pakFilename..[[_content.txt*]],H.paramFiles)
             end
             
-            -- if H.IsFileExist([[..\ModBackups\]]..prefix..[[BuildHistory\]]..pakFilename) then
+            -- if H.IsFileExist([[../ModBackups/]]..prefix..[[BuildHistory/]]..pakFilename) then
               -- print(">>> Created this MOD: "..H._zBRIGHTORANGE.."'"..H.pakFilenameLessEXT.."'"..H._zDEFAULT)
               -- H.Report("")
               -- H.Report("","Created this MOD: '"..H.pakFilenameLessEXT.."'")
             -- end
           end
           
-          if H.IsFileExist([[..\ModBackups\]]..prefix..[[BuildHistory\]]..pakFilename) then
+          if H.IsFileExist([[../ModBackups/]]..prefix..[[BuildHistory/]]..pakFilename) then
             print(">>> Created this MOD: "..H._zBRIGHTORANGE.."'"..H.pakFilenameLessEXT.."'"..H._zDEFAULT)
             H.Report("")
             H.Report("","Created this MOD: '"..H.pakFilenameLessEXT.."'")
@@ -15392,21 +15393,21 @@ H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring
             local destFolder = H.gNMS_MODS_FOLDER
             
             if H._bCOPYtoNMS == "ALL" then
--- H.printf("R: H.pakFilenameLessEXT = [%s]",destFolder..[[\]]..H.pakFilenameLessEXT)
+-- H.printf("R: H.pakFilenameLessEXT = [%s]",destFolder..[[/]]..H.pakFilenameLessEXT)
 -- H.WFAK("R0:...")
-              H.DeleteDir(destFolder..[[\]]..H.pakFilenameLessEXT)
+              H.DeleteDir(destFolder..[[/]]..H.pakFilenameLessEXT)
 -- H.WFAK("R9:...")
               if #H.combinedScriptList > 0 then
                 -- this is a combine mod, let us delete all MODS folders that are in this mod
                 for i=1,#H.combinedScriptList do
                   if H.combinedScriptList[i] ~= "" then
                     -- H.printf("H.combinedScriptList[%d] = [%s]",i,H.combinedScriptList[i])
-                    H.DeleteDir(destFolder..[[\]]..H.combinedScriptList[i])
+                    H.DeleteDir(destFolder..[[/]]..H.combinedScriptList[i])
                   end
                 end
               end
               
-              H.CopyFile([[..\CreatedMODS\*.*]], destFolder..[[\]], H.paramFilesDir)
+              H.CopyFile([[../CreatedMODS/*.*]], destFolder..[[/]], H.paramFilesDir)
 -- H.WFAK("R10:...")
               
               if not H.gIs_LEAN_MODE then
@@ -15429,7 +15430,7 @@ H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring
                 --H.param = [[/y /h /j]] --no /s (no folders and sub-folders)
                 
                 for i=1,#H.gModScriptPakDirList do
-                  H.CopyFile(H.gModScriptPakDirList[i][1], destFolder..[[\]],H.paramFiles)
+                  H.CopyFile(H.gModScriptPakDirList[i][1], destFolder..[[/]],H.paramFiles)
 -- H.printf("S: H.gModScriptPakDirList[%d][1] = [%s]",i,H.gModScriptPakDirList[i][1])
                 end
               end
@@ -15452,28 +15453,28 @@ H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring
                   for i=1,#H.combinedScriptList do
                     if H.combinedScriptList[i] ~= "" then
                       -- H.printf("H.combinedScriptList[%d] = [%s]",i,H.combinedScriptList[i])
-                      H.DeleteDir(destFolder..[[\]]..H.combinedScriptList[i])
+                      H.DeleteDir(destFolder..[[/]]..H.combinedScriptList[i])
                     end
                   end
                 end
 
                 if modType == 2 then -- CopyCOMBINEDDISTINCTMODS           -- PROBABLY OBSOLETE
-                  H.DeleteDir(destFolder..[[\]]..pakFilenameInc)
--- H.printf("P: pakFilenameInc = [%s]",destFolder..[[\]]..pakFilenameInc)
+                  H.DeleteDir(destFolder..[[/]]..pakFilenameInc)
+-- H.printf("P: pakFilenameInc = [%s]",destFolder..[[/]]..pakFilenameInc)
 -- H.WFAK("P:...")
-                  H.CopyFile([[..\CreatedMODS\]]..pakFilenameInc, destFolder..[[\]],H.paramExcMXML)
-                  H.CopyFile([[..\CreatedMODS\]]..pakFilenameInc..[[_content.txt]], destFolder..[[\]],H.paramExcMXML)
+                  H.CopyFile([[../CreatedMODS/]]..pakFilenameInc, destFolder..[[/]],H.paramExcMXML)
+                  H.CopyFile([[../CreatedMODS/]]..pakFilenameInc..[[_content.txt]], destFolder..[[/]],H.paramExcMXML)
                 else
-                  H.DeleteDir(destFolder..[[\]]..H.pakFilenameLessEXT)
--- H.printf("Q: H.pakFilenameLessEXT = [%s]",destFolder..[[\]]..H.pakFilenameLessEXT)
+                  H.DeleteDir(destFolder..[[/]]..H.pakFilenameLessEXT)
+-- H.printf("Q: H.pakFilenameLessEXT = [%s]",destFolder..[[/]]..H.pakFilenameLessEXT)
 -- H.WFAK("Q:...")
-                  H.CopyFile([[..\CreatedMODS\]]..H.pakFilenameLessEXT, destFolder..[[\]],H.paramExcMXML)
+                  H.CopyFile([[../CreatedMODS/]]..H.pakFilenameLessEXT, destFolder..[[/]],H.paramExcMXML)
                   if IsCOMBINE_MODS_flag then
-                    H.CopyFile([[..\CreatedMODS\]]..H.pakFilenameLessEXT..[[_content.txt]], destFolder..[[\]],H.paramExcMXML)
+                    H.CopyFile([[../CreatedMODS/]]..H.pakFilenameLessEXT..[[_content.txt]], destFolder..[[/]],H.paramExcMXML)
                   end
                 end
                 -- handle LocTable.MXML exception
-                H.CopyFile([[..\CreatedMODS\LocTable.MXML]], destFolder..[[\LocTable.MXML*]], H.paramFiles)
+                H.CopyFile([[../CreatedMODS/LocTable.MXML]], destFolder..[[/LocTable.MXML*]], H.paramFiles)
               end --if answer == "Y" then
             end --elseif H._bCOPYtoNMS == "SOME" and not IsCOMBINE_MODS_flag then
             
@@ -15495,7 +15496,7 @@ H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring
         H.Report("")
         H.Report("","Extracting ALL files from: "..CreatedPak,"")
         
-        local destination = [[.\MOD]]
+        local destination = [[./MOD]]
         local success = H.psarc_E([[]], CreatedPak, destination, "", "-y -q")
         -- printf("success = [%s]",success)
         if success ~= "OK" then
@@ -15512,7 +15513,7 @@ H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring
         -- H.printf("status = [%s], result = [%s]",status,result)
 
         -- NOW check the log
-        arg[1] = "..\\" -- path to REPORT.lua
+        arg[1] = "../" -- path to REPORT.lua
         arg[2] = "" -- path to MODBUILDER
         arg[3] = "Decompiling" -- a message
         arg[4] = "keepOpen" -- do NOT close Report
@@ -15534,7 +15535,7 @@ H.printf("bbb #H.customLanguageFiles = %d, [%s]",#H.customLanguageFiles,tostring
             -- SwitchBackToDeclaredMBINCompiler(H,true)
             
             -- NOW check the log
-            arg[1] = "..\\" -- path to REPORT.lua
+            arg[1] = "../" -- path to REPORT.lua
             arg[2] = "" -- path to MODBUILDER
             arg[3] = "Decompiling" -- a message
             arg[4] = "keepOpen" -- do NOT close Report
@@ -15686,7 +15687,7 @@ function SetupGENERIC_lua(H)
       print(H._zBRIGHTGREEN.."  No script found and one or more EXMLs are in ModScript: Creating a generic script..."..H._zDEFAULT)
     end
     H._bTotalNumberScripts = H._bTotalNumberScripts + 1
-  -- elseif H.IsFileExist(H.gPathToModScriptFromModbuilder..[[\GENERIC.lua]]) then
+  -- elseif H.IsFileExist(H.gPathToModScriptFromModbuilder..[[/GENERIC.lua]]) then
     -- print(H._zBRIGHTGREEN.."  One or more EXMLs are in ModScript: Re-creating a generic script..."..H._zDEFAULT)
   else
     --at least one script and no GENERIC.lua
@@ -15711,8 +15712,8 @@ function SetupGENERIC_lua(H)
         break
       end
     end
-    -- H.WriteToFile(H.ConvertLineTableToText(generic),H.gPathToModScriptFromModbuilder..[[\GENERIC.lua]])
-    H.WriteToFile(generic,H.gPathToModScriptFromModbuilder..[[\GENERIC.lua]])
+    -- H.WriteToFile(H.ConvertLineTableToText(generic),H.gPathToModScriptFromModbuilder..[[/GENERIC.lua]])
+    H.WriteToFile(generic,H.gPathToModScriptFromModbuilder..[[/GENERIC.lua]])
     
     --refresh Script List
     H.gModScriptLuaDirList = H.GetFilesWithExt(".lua")
@@ -15773,7 +15774,7 @@ function pre_processScripts(H)
   
   --****************************  list scripts to process  *********************
   print("")
-  local cutPoint = #(H.gMASTER_FOLDER_PATH..[[ModScript\]])
+  local cutPoint = #(H.gMASTER_FOLDER_PATH..[[ModScript/]])
   if H.IsArguments then
     cutPoint = 0
   end
@@ -15813,7 +15814,7 @@ function pre_processScripts(H)
       H.WriteToFile("This PatchMod was created from:\n",filename)
       local pakContent = H.ParseTextFileIntoTable("ModScript_pak_list.txt")
       for i=1,#pakContent do
-        local pakName = string.gsub(pakContent[i],[[..\ModScript\]],"")
+        local pakName = string.gsub(pakContent[i],[[../ModScript/]],"")
         H.WriteToFileAppend(" - "..pakName.."\n",filename)
       end
       H.WriteToFileAppend("\nAnd modded by these scripts:\n",filename)
@@ -15846,7 +15847,7 @@ function pre_processScripts(H)
         printf("   >>> Extracting ALL files from: "..H._zBRIGHTGREEN.."%s"..H._zDEFAULT,ModScript_pakNames_table[i])
         H.Report("")
         H.Report("","Extracting ALL files from: "..ModScript_pakNames_table[i],"")
-        local success = H.psarc_E([[]], ModScript_pakNames_table[i], [[.\MOD]], "", "-y -q")
+        local success = H.psarc_E([[]], ModScript_pakNames_table[i], [[./MOD]], "", "-y -q")
         -- printf("success = [%s]",success)
         if success ~= "OK" then
           print(">>> "..H.gcWARNING.." [WARNING] Could not extract ALL files from pak "..H._zDEFAULT)
@@ -15854,15 +15855,15 @@ function pre_processScripts(H)
         end                  
         
         -- remove all .txt, .cs files (like AMUMSS.vW.X.Y.Z.txt)
-        H.DeleteFile([[.\MOD\*.txt]])
-        H.DeleteFile([[.\MOD\*.cs]])
+        H.DeleteFile([[./MOD/*.txt]])
+        H.DeleteFile([[./MOD/*.cs]])
         
         -- decompile MBIN files (they may not be in MBIN_table and would be deleted at the end)
-        local status,result = H.MBINCompiler_D([[.\MOD]],false,false,true,"     @@@ decompiling MBINs from paks...",true)
+        local status,result = H.MBINCompiler_D([[./MOD]],false,false,true,"     @@@ decompiling MBINs from paks...",true)
         -- H.printf("status = [%s], result = [%s]",status,result)
 
         -- NOW check the log
-        arg[1] = "..\\" -- path to REPORT.lua
+        arg[1] = "../" -- path to REPORT.lua
         arg[2] = "" -- path to MODBUILDER
         arg[3] = "Decompiling" -- a message
         arg[4] = "keepOpen" -- do NOT close Report
@@ -15877,14 +15878,14 @@ function pre_processScripts(H)
             H.SwitchToOtherMBINCompiler(H,"AMUMSS")
             
             -- decompile MBIN files (they may not be in MBIN_table and would be deleted at the end)
-            local status,result = H.MBINCompiler_D([[.\MOD]],false,false,true,"     @@@ decompiling MBINs from paks...",true)
+            local status,result = H.MBINCompiler_D([[./MOD]],false,false,true,"     @@@ decompiling MBINs from paks...",true)
             -- H.printf("status = [%s], result = [%s]",status,result)
             
             H.switchBACK = true
             -- SwitchBackToDeclaredMBINCompiler(H,true)
             
             -- NOW check the log
-            arg[1] = "..\\" -- path to REPORT.lua
+            arg[1] = "../" -- path to REPORT.lua
             arg[2] = "" -- path to MODBUILDER
             arg[3] = "Decompiling" -- a message
             arg[4] = "keepOpen" -- do NOT close Report
@@ -15927,11 +15928,11 @@ function pre_processScripts(H)
   -- doing this only once per AMUMSS run, this is the global EXTRA files
   local function HandleGlobalMEFTI(H, IsFirstCOMBINE_MODS_flag)
     -- H.printf("==> In HandleGlobalMEFTI %s","")    
-    --get list of files in ModScript\GlobalMEFTI
-    local FilePathSource = [[..\ModScript\GlobalMEFTI]]
+    --get list of files in ModScript/GlobalMEFTI
+    local FilePathSource = [[../ModScript/GlobalMEFTI]]
 
-    H.DeleteFile(FilePathSource..[[\]]..H.gUSE_name,true)
-    H.DeleteFile(FilePathSource..[[\]]..H.gCOMBINE_name,true)
+    H.DeleteFile(FilePathSource..[[/]]..H.gUSE_name,true)
+    H.DeleteFile(FilePathSource..[[/]]..H.gCOMBINE_name,true)
     
     local cmd = [[robocopy ]]..FilePathSource..[[\. ]]..FilePathSource..[[\. *.* /S /V /L /R:1 /NS /NDL /NP /NC /NJS /NJH /MT:12]]
     local mainMEFTIlist = H.GetList(cmd,true)
@@ -15941,9 +15942,9 @@ function pre_processScripts(H)
     if #mainMEFTIlist > 0 then
       if not H.gIs_LEAN_MODE then
         print(H._zBRIGHTORANGE.."--------------------------------------------------------------------------------------"..H._zDEFAULT)
-        print(">>> [INFO] Found files in '"..H._zBRIGHTGREEN..[[ModScript\GlobalMEFTI]]..H._zDEFAULT..H._zYELLOW..[[', including them in pak]]..H._zDEFAULT)
+        print(">>> [INFO] Found files in '"..H._zBRIGHTGREEN..[[ModScript/GlobalMEFTI]]..H._zDEFAULT..H._zYELLOW..[[', including them in pak]]..H._zDEFAULT)
       end
-      H.Report("",[[>>> Found files in 'ModScript\GlobalMEFTI', including them in pak]])
+      H.Report("",[[>>> Found files in 'ModScript/GlobalMEFTI', including them in pak]])
 
       if IsFirstCOMBINE_MODS_flag then
         local cutPoint = #(string.sub(mainMEFTIlist[1],1,string.find(mainMEFTIlist[1],[[GlobalMEFTI\]])+12))
@@ -15962,7 +15963,7 @@ function pre_processScripts(H)
     
     if not H.gIs_LEAN_MODE then
       --clean up spaces and print list
-      local cutPoint = #(H.gMASTER_FOLDER_PATH..[[ModScript\GlobalMEFTI\]])
+      local cutPoint = #(H.gMASTER_FOLDER_PATH..[[ModScript/GlobalMEFTI\]])
       local printLimit = 15
       for i=1,#mainMEFTIlist do
         if i <= printLimit then
@@ -15974,13 +15975,13 @@ function pre_processScripts(H)
           print(H._zYELLOW.."               BE PATIENT"..H._zDEFAULT..", the output may only seem to stop at times...")
           break
         end
-        --we could add the names of the ModScript\GlobalMEFTI files to the CONTENT
-        --H.WriteToFileAppend("\ModScript\GlobalMEFTI: "..string.sub(H.trim(mainMEFTIlist[i]),cutPoint + 1),[[COMBINED_CONTENT_LIST.txt]])
+        --we could add the names of the ModScript/GlobalMEFTI files to the CONTENT
+        --H.WriteToFileAppend("\ModScript/GlobalMEFTI: "..string.sub(H.trim(mainMEFTIlist[i]),cutPoint + 1),[[COMBINED_CONTENT_LIST.txt]])
       end
     end
-    H.WriteToFileAppend([[Found files in 'ModScript\GlobalMEFTI', including them in pak]].."\n",[[COMBINED_CONTENT_LIST.txt]])
+    H.WriteToFileAppend([[Found files in 'ModScript/GlobalMEFTI', including them in pak]].."\n",[[COMBINED_CONTENT_LIST.txt]])
     
-    H.CopyFile([[..\ModScript\GlobalMEFTI\*.*]],"MOD",H.paramFilesDir) -- ,false for debug
+    H.CopyFile([[../ModScript/GlobalMEFTI\*.*]],"MOD",H.paramFilesDir) -- ,false for debug
     -- H.WFAK("End of HandleGlobalMEFTI()")
   end
   -- ############# END: Copy 'main' EXTRA files to MOD ##################
@@ -15995,8 +15996,8 @@ function pre_processScripts(H)
     
     --only for backward compatibility
     --check if oldname sub-folder GlobalMEFTI exist instead of sub-folder MEFTI
-    local oldFilePathSource = [[..\ModScript\]].._bScriptNamePath..[[\GlobalMEFTI]]
-    local FilePathSource = [[..\ModScript\]].._bScriptNamePath..[[\MEFTI]]
+    local oldFilePathSource = [[../ModScript/]].._bScriptNamePath..[[\GlobalMEFTI]]
+    local FilePathSource = [[../ModScript/]].._bScriptNamePath..[[\MEFTI]]
     if H.IsDirExist(oldFilePathSource) then
       --directory name changed to MEFTI
       os.rename(oldFilePathSource,FilePathSource)
@@ -16005,8 +16006,8 @@ function pre_processScripts(H)
     
     -- print("FilePathSource = ["..FilePathSource.."]")
     
-    H.DeleteFile(FilePathSource..[[\]]..H.gUSE_name,true)
-    H.DeleteFile(FilePathSource..[[\]]..H.gCOMBINE_name,true)
+    H.DeleteFile(FilePathSource..[[/]]..H.gUSE_name,true)
+    H.DeleteFile(FilePathSource..[[/]]..H.gCOMBINE_name,true)
     
     --get list of files in this MEFTI
     local cmd = [[robocopy "]]..FilePathSource..[[\." "]]..FilePathSource..[[\." *.* /S /V /L /R:1 /NS /NDL /NP /NC /NJS /NJH /MT:12]]
@@ -16039,7 +16040,7 @@ function pre_processScripts(H)
     
     if not H.gIs_LEAN_MODE then
       --clean up spaces and print list
-      local cutPoint = #(H.gMASTER_FOLDER_PATH..[[ModScript\]])
+      local cutPoint = #(H.gMASTER_FOLDER_PATH..[[ModScript/]])
       local printLimit = 15
       for i=1,#MEFTIlist do
         if i <= printLimit then
@@ -16057,8 +16058,8 @@ function pre_processScripts(H)
     
     --copy the files to MODBUILDER\MOD excluding
     --   if destination file exists and is the same date or newer than the source - dont bother to overwrite it
-    FolderPath = [[.\MOD]]
-    local cmd = [[ROBOCOPY /s /j /XN "]]..FilePathSource..[[" "]]..FolderPath..[[" 1>NUL 2>NUL]]
+    FolderPath = [[./MOD]]
+    local cmd = [[cp -r -u "]]..FilePathSource..[[/. "]]..FolderPath..[[" >/dev/null 2>&1]]
     -- print("cmd = ["..cmd.."]")
     H.NewThread(cmd)
     
@@ -16082,7 +16083,7 @@ function pre_processScripts(H)
       --copy script to MOD folder
       local FilePathSource = H.LoadFileData("CurrentModScript.txt")
 
-      local FolderPath = [[.\MOD\]]..H.GetFilenameFromFilePath(FilePathSource,false)
+      local FolderPath = [[./MOD/]]..H.GetFilenameFromFilePath(FilePathSource,false)
       
       local ext = ""
       if H.IsFileExist(FilePathSource.."x") then
@@ -16090,22 +16091,22 @@ function pre_processScripts(H)
         ext = "x"
       end
       
-      local cmd = [[copy ]]..[[/y]]..[[ "]]..FilePathSource..ext..[[" "]]..FolderPath..[["]].." 1>NUL 2>NUL"
+      local cmd = [[cp -f "]]..FilePathSource..ext..[[" "]]..FolderPath..[[" >/dev/null 2>&1]]
       os.execute(cmd)
       -- always delete the .luax file if it exists
       H.DeleteFile(FilePathSource.."x")
 
       -- -- if it exist, also needed to recreate this mod
-      -- H.CopyFile(H.GetFolderPathFromFilePath(FilePathSource)..[[\LocTable.txt]], [[.\MOD\LocTable.txt*]], H.paramFiles) -- only ALL files    
+      -- H.CopyFile(H.GetFolderPathFromFilePath(FilePathSource)..[[/LocTable.txt]], [[./MOD/LocTable.txt*]], H.paramFiles) -- only ALL files    
     end
     
     -- copy AMUMSS version in MOD
     local AMUMSSVersion = H.LoadFileData("AMUMSSVersion.txt"):gsub("(.*)%c*.+","%1")
-    H.WriteToFile("",[[.\MOD\AMUMSS_v]]..AMUMSSVersion..[[.txt]])
+    H.WriteToFile("",[[./MOD/AMUMSS_v]]..AMUMSSVersion..[[.txt]])
     
     if _bScriptNamePath ~= "" then
       if H._bExtraFilesInPAK == "Y" then
-        -- include the files in ModScript\GlobalMEFTI
+        -- include the files in ModScript/GlobalMEFTI
         
         local IsGlobalMEFTIAlreadyDone = false
         if H.gIsGlobalIndividual then
@@ -16136,9 +16137,9 @@ function pre_processScripts(H)
         if IsGlobalMEFTIAlreadyDone then
           if not H.gIs_LEAN_MODE then
             print(H._zBRIGHTORANGE.."--------------------------------------------------------------------------------------"..H._zDEFAULT)
-            print([[>>> [INFO] Found files in ']]..H._zBRIGHTGREEN..[[ModScript\GlobalMEFTI]]..H._zDEFAULT..H._zYELLOW..[[', already included in pak]]..H._zDEFAULT)
+            print([[>>> [INFO] Found files in ']]..H._zBRIGHTGREEN..[[ModScript/GlobalMEFTI]]..H._zDEFAULT..H._zYELLOW..[[', already included in pak]]..H._zDEFAULT)
           end
-          H.Report("",[[>>> Found files in 'ModScript\GlobalMEFTI', already included in pak]])
+          H.Report("",[[>>> Found files in 'ModScript/GlobalMEFTI', already included in pak]])
         end
       end
       
@@ -16197,7 +16198,7 @@ function pre_processScripts(H)
   end
   --***************************************************************************************************
             
-  -- local cutPoint = #(H.gMASTER_FOLDER_PATH..[[ModScript\]])
+  -- local cutPoint = #(H.gMASTER_FOLDER_PATH..[[ModScript/]])
   
   -- local totalAccumulatedTime = 0
   local IsCOMBINE_MODS_flag = false -- includes H.gModScriptLuaDirList[i][4] == "M" and == "N"
@@ -16209,7 +16210,7 @@ function pre_processScripts(H)
     H._bScriptCounter = i
     H._bScriptName = H.trim(string.sub(H.gModScriptLuaDirList[i][1],cutPoint + 1))
     
-    H.WriteToFile(H.gMASTER_FOLDER_PATH..[[ModScript\]]..H._bScriptName, "CurrentModScript.txt")
+    H.WriteToFile(H.gMASTER_FOLDER_PATH..[[ModScript/]]..H._bScriptName, "CurrentModScript.txt")
     H.WriteToFile(H._bScriptName, "CurrentModScript_Short.txt")
     
     print("")
@@ -16275,7 +16276,7 @@ function pre_processScripts(H)
         --we need to reset COMBINED_CONTENT_LIST
         PrepareCombinedContent(H)
         
-        --we could add the names of the ModScript\GlobalMEFTI files to the CONTENT
+        --we could add the names of the ModScript/GlobalMEFTI files to the CONTENT
         --not real code
         -- for n = 1,#GlobalMEFTI do
           -- H.WriteToFileAppend("\nOriginal information:\n",[[COMBINED_CONTENT_LIST.txt]])
@@ -16355,7 +16356,7 @@ function pre_processScripts(H)
         --we need to reset COMBINED_CONTENT_LIST
         PrepareCombinedContent(H)
         
-        --we could add the names of the ModScript\GlobalMEFTI files to the CONTENT
+        --we could add the names of the ModScript/GlobalMEFTI files to the CONTENT
         --not real code
         -- for n = 1,#GlobalMEFTI do
           -- H.WriteToFileAppend("\nOriginal information:\n",[[COMBINED_CONTENT_LIST.txt]])
@@ -16422,7 +16423,7 @@ function pre_processScripts(H)
           end
           
           local ProcessInfo = os.capture([[tasklist /FI "ImageName eq luaM.exe"]])
-          local _,numUsedSlots = string.gsub(ProcessInfo,"luaM.exe","",-1)
+          local _,numUsedSlots = string.gsub(ProcessInfo,"luaM.exe","")
           if numUsedSlots == 0 then
             --should only be this instance
             -- print("ZZZZZZZZZZZ "..[[dofile("CreateMapFileTreeStarter.lua")]])
@@ -16440,7 +16441,7 @@ function pre_processScripts(H)
         if not H.gIs_LEAN_MODE then
           print(">>> [INFO]"..H._zBRIGHTGREEN..[[ Cleaning 'MODBUILDER\MOD']]..H._zDEFAULT)
         end
-        local cmd = [[CleanMod.bat]]
+        local cmd = H.gIsWindows and [[CleanMod.bat]] or [[rm -rf ./MOD; mkdir ./MOD]]
         H.NewThread(cmd)
         
         -- reset list
@@ -16517,7 +16518,7 @@ function pre_processScripts(H)
           
           if not IsBadContainer then
             HandleAllExtraFiles(H,_bScriptNamePath,IsCOMBINE_MODS_flag,IsFirstCOMBINE_MODS_flag,IsMEFTIexist_flag,IsFirstScriptInSubFolder_flag)
-            os.rename([[.\MOD\LocTable.mxml]],[[.\MOD\LocTable.MXML]])
+            os.rename([[./MOD/LocTable.mxml]],[[./MOD/LocTable.MXML]])
             
             if not H.gIs_LEAN_MODE then
               print(H._zBRIGHTORANGE.."--------------------------------------------------------------------------------------"..H._zDEFAULT)
@@ -16552,7 +16553,7 @@ function pre_processScripts(H)
         H.Report("","========================================================================================")
         H.Report("","Starting to process script #"..H._bScriptCounter.."/"..H._bTotalNumberScripts.." [["..H._bScriptName.."]] {")
         -- if H._bExtraFilesInPAK == "Y" then
-          -- H.Report("",[[Copying ModScript\GlobalMEFTI content to MODBUILDER\MOD...]])
+          -- H.Report("",[[Copying ModScript/GlobalMEFTI content to MODBUILDER\MOD...]])
         -- end
         
         print(H._zBRIGHTGREEN.."              ++++++++++  A Single-MOD script  ++++++++++"..H._zDEFAULT)
@@ -16581,7 +16582,7 @@ function pre_processScripts(H)
 
         if not IsBadContainer then
           HandleAllExtraFiles(H,_bScriptNamePath,IsCOMBINE_MODS_flag,IsFirstCOMBINE_MODS_flag,IsMEFTIexist_flag,IsFirstScriptInSubFolder_flag)
-          os.rename([[.\MOD\LocTable.mxml]],[[.\MOD\LocTable.MXML]])
+          os.rename([[./MOD/LocTable.mxml]],[[./MOD/LocTable.MXML]])
           
           if not H.gIs_LEAN_MODE then
             print(H._zBRIGHTORANGE.."--------------------------------------------------------------------------------------"..H._zDEFAULT)
@@ -16737,7 +16738,7 @@ end
 -- LDebug = true
 if LDebug then print("***     STARTING LoadAndExecuteModScript.lua") end
 
-H.gfilePATH = "..\\" --for Report()
+H.gfilePATH = "../" --for Report()
 
 H.THIS = "In LoadAndExecuteModScript: "
 
@@ -16853,11 +16854,11 @@ else
 end
 -- END: Test if NMS version is of the right type paks
 
-H.gPathToModbuilderMod = [[.\MOD\]] --was [[MODBUILDER\MOD\]]
+H.gPathToModbuilderMod = [[./MOD/]] --was [[MODBUILDER/MOD/]]
 --in case it does not yet exist
 H.mkdir(H.gPathToModbuilderMod)
 
-H.gPathToModScriptFromModbuilder = [[..\ModScript]]
+H.gPathToModScriptFromModbuilder = [[../ModScript]]
 
 -- H.gCurrentMBINCompilerPath = [[MBINCompiler.exe]]
 
@@ -16976,8 +16977,8 @@ H._mDateTimeFormat = "%Y/%m/%d-%H:%M:%S"
 H.CustomDateTimeFormat = false
 
 -- make date format configurable
-if H.IsFileExist([[..\CONFIG\DateTimeFormat.txt]]) then
-  local tmpDTF = H.LoadFileData([[..\CONFIG\DateTimeFormat.txt]])
+if H.IsFileExist([[../CONFIG/DateTimeFormat.txt]]) then
+  local tmpDTF = H.LoadFileData([[../CONFIG/DateTimeFormat.txt]])
   if tmpDTF and tmpDTF ~= H._mDateTimeFormat then
     H._mDateTimeFormat = tmpDTF
     H.CustomDateTimeFormat = true
@@ -16995,7 +16996,7 @@ H.WriteToFile(cleanedNow,[[cleanedDateTime.txt]]) --file only used by CreateMod.
 -- _bCPU = os.getenv("_bCPU")
 -- _bMinCPU = os.getenv("_bMinCPU")
 
-H.S_msg_report_new_equal_old_value = H.IsFileExist([[..\WOPT_CheckNewOldValue.txt]])
+H.S_msg_report_new_equal_old_value = H.IsFileExist([[../WOPT_CheckNewOldValue.txt]])
 
 H._mSHOWSECTIONS = os.getenv("-SHOWSECTIONS")
 if H.gIs_LEAN_MODE then
@@ -17031,7 +17032,7 @@ H.Report("")
 --END: Get all environment variables once
 
 --always remove/reset it
-os.remove(H.gPathToModScriptFromModbuilder..[[\GENERIC.lua]])
+os.remove(H.gPathToModScriptFromModbuilder..[[/GENERIC.lua]])
 
 -- print("***************************************************************************************    arguments")
 -- printf("type(arg) = %s",type(arg))
@@ -17474,7 +17475,7 @@ if H.maxNumBackupReports < 0 then
   H.maxNumBackupReports = 1
 end
 
-local reportsTable = H.GetFileCreationByDate([[..\TOOLS\REPORTS_BACKUP]])
+local reportsTable = H.GetFileCreationByDate([[../TOOLS/REPORTS_BACKUP]])
 
 -- for i=1,#reportsTable do
   -- print(reportsTable[i])
@@ -17484,8 +17485,8 @@ if #reportsTable >= H.maxNumBackupReports * 2 then
   local count = #reportsTable
   if count > 2 then
     while count > (H.maxNumBackupReports-1) * 2 do
-      H.DeleteFile([[..\TOOLS\REPORTS_BACKUP\]]..reportsTable[count],false,true)
-      H.DeleteFile([[..\TOOLS\REPORTS_BACKUP\]]..reportsTable[count-1],false,true)
+      H.DeleteFile([[../TOOLS/REPORTS_BACKUP/]]..reportsTable[count],false,true)
+      H.DeleteFile([[../TOOLS/REPORTS_BACKUP/]]..reportsTable[count-1],false,true)
       count = count - 2
     end
   end

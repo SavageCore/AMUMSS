@@ -34,10 +34,17 @@ local bint = require 'bint'(256)
 H = {}
 H.LH_Version = "5.5"
 
+-- Linux: native path separator.
+-- '/' on Linux/macOS, '\' on Windows. All path helpers below branch on it,
+-- so behavior on Windows is unchanged.
+H.gPS = package.config:sub(1,1)
+H.gIsWindows = (H.gPS == [[\]])
+
 H.lanes = require "lanes".configure()
 
 H.gMASTER_FOLDER_PATH = string.gsub(lfs.currentdir(),[[MODBUILDER]],"")
-H.g_TEMP_DECOMPILED_PATH = H.gMASTER_FOLDER_PATH..[[\MODBUILDER\_TEMP\DECOMPILED\]]
+-- Linux: built with the native separator; unchanged result on Windows.
+H.g_TEMP_DECOMPILED_PATH = H.gMASTER_FOLDER_PATH..H.gPS..[[MODBUILDER]]..H.gPS..[[_TEMP]]..H.gPS..[[DECOMPILED]]..H.gPS
 
 -- https://stackoverflow.com/questions/4252176/exclude-in-xcopy-just-for-a-file-type
 H.paramFiles = [[ /y /h /j /r]] -- only ALL files, no sub-folder
@@ -905,13 +912,13 @@ function H.IsFileExist(pathname,plain)
   return Exist
 end
 
-H.gVerbose = H.IsFileExist([[..\WOPT_VERBOSE_LUA.txt]]) or os.getenv("_gVERBOSE") == "Y"
+H.gVerbose = H.IsFileExist([[../WOPT_VERBOSE_LUA.txt]]) or os.getenv("_gVERBOSE") == "Y"
 
 if H.gVerbose then print("   [==[LUA Verbose ON]==]") end
 
-H.gfilePATH = ".\\" --for Report()
-if strfind(lfs.currentdir(),[[\MODBUILDER]]) then
-  H.gfilePATH = "..\\" --for Report()
+H.gfilePATH = "./" --for Report()
+if strfind(lfs.currentdir(),[[MODBUILDER]]) then
+  H.gfilePATH = "../" --for Report()
 end
 
 H.gpak_listTable = {}
@@ -956,20 +963,20 @@ function H.LoadFileData(pathname,binary)
   return data
 end
 
-local NMS_FOLDER = H.LoadFileData([[..\CONFIG\NMS_FOLDER.txt]]):gsub("\n","") --remove line break if any
+local NMS_FOLDER = H.LoadFileData([[../CONFIG/NMS_FOLDER.txt]]):gsub("\n","") --remove line break if any
 
 H.PCBanks_LISTdateTime = "PCBanks_listDateTime.txt"
 H.PAK_LIST_CREATED = "PAK_LIST_CREATED.txt"
 H.NMS_VERSION_CREATED = "NMS_VERSION_CREATED.txt"
 
-H.gNMS_Binary_PATH = NMS_FOLDER..[[\Binaries\NMS.exe]]
-H.gNMS_SETTINGS_FOLDER_PATH = NMS_FOLDER..[[\Binaries\SETTINGS\]]
-H.gNMS_GAMEDATA_FOLDER_PATH = NMS_FOLDER..[[\GAMEDATA\]]
-H.gNMS_PCBANKS_FOLDER_PATH = H.gNMS_GAMEDATA_FOLDER_PATH..[[PCBANKS\]]
-H.gNMS_MODS_FOLDER = H.gNMS_GAMEDATA_FOLDER_PATH..[[MODS\]]
+H.gNMS_Binary_PATH = NMS_FOLDER..[[/Binaries/NMS.exe]]
+H.gNMS_SETTINGS_FOLDER_PATH = NMS_FOLDER..[[/Binaries/SETTINGS/]]
+H.gNMS_GAMEDATA_FOLDER_PATH = NMS_FOLDER..[[/GAMEDATA/]]
+H.gNMS_PCBANKS_FOLDER_PATH = H.gNMS_GAMEDATA_FOLDER_PATH..[[PCBANKS/]]
+H.gNMS_MODS_FOLDER = H.gNMS_GAMEDATA_FOLDER_PATH..[[MODS/]]
 
 -- old
-H.gNMS_PCBANKS_MODS_FOLDER = H.gNMS_PCBANKS_FOLDER_PATH..[[MODS\]]
+H.gNMS_PCBANKS_MODS_FOLDER = H.gNMS_PCBANKS_FOLDER_PATH..[[MODS/]]
 
 H.MODSETTINGS_PATH = H.gNMS_SETTINGS_FOLDER_PATH.."GCMODSETTINGS.MXML"
 
@@ -1251,6 +1258,11 @@ function H.NewThread(cmd,silent)
   if silent then
     hideOutput = " 1>NUL 2>NUL"
   end
+  if not H.gIsWindows then
+    -- Linux: call sites already build posix commands
+    local hide = hideOutput:gsub(" 1>NUL 2>NUL"," >/dev/null 2>&1")
+    return os.execute(cmd..hide)
+  end
   -- /B /wait "" /MIN: order is important for it to work on win7 and early win10 version
   local state,sResult,nResult = os.execute([[START /B /wait "" /MIN cmd /c ]]..cmd..hideOutput)
   return state,sResult,nResult
@@ -1521,10 +1533,15 @@ end
 --***************************************************************************************************
 function H.IsDirExist(path)
   local result = false
-  path = strgsub(path,[[/]],[[\]])
-  if strsub(path,#path-1) == [[\]] then
-    --removing last \
-    path = strsub(path,1,-2)
+  if H.gIsWindows then
+    path = strgsub(path,[[/]],[[\]])
+    if strsub(path,#path-1) == [[\]] then
+      --removing last \
+      path = strsub(path,1,-2)
+    end
+  else
+    -- Linux: lfs handles // and trailing / natively
+    path = strgsub(path,[[\]],[[/]])
   end
   -- print(">>> "..path)
   if lfs.attributes(path,'mode') == "directory" then
@@ -1993,6 +2010,9 @@ end
 
 --***************************************************************************************************
 function H.getPath(str)
+  if not H.gIsWindows then
+    return string.match(strgsub(str,[[\]],[[/]]),[[.*/]])
+  end
   -- return str:gsub('\\','/'):match('.*/')
   return string.match(strgsub(str,[[/]],[[\]]),[[.*\]])
 end
@@ -2000,6 +2020,8 @@ end
 --***************************************************************************************************
 --changes all \\ to \
 --changes all / to \
+-- Linux: normalizes to H.gPS.
+--Windows behavior is unchanged.
 function H.NormalizePath(pathname,IsStripExtension,IsUpper)
   local _IsUpper = true
   if IsUpper ~= nil then
@@ -2012,10 +2034,17 @@ function H.NormalizePath(pathname,IsStripExtension,IsUpper)
       pathname = strgsub(pathname,ext,"")
     end
   end
-  repeat
-    pathname = strgsub(pathname,[[/]],[[\]])
-    pathname = strgsub(pathname,[[\\]],[[\]])
-  until not strfind(pathname,[[/]],1,true) and not strfind(pathname,[[\\]],1,true)
+  if H.gIsWindows then
+    repeat
+      pathname = strgsub(pathname,[[/]],[[\]])
+      pathname = strgsub(pathname,[[\\]],[[\]])
+    until not strfind(pathname,[[/]],1,true) and not strfind(pathname,[[\\]],1,true)
+  else
+    repeat
+      pathname = strgsub(pathname,[[\]],[[/]])
+      pathname = strgsub(pathname,[[//]],[[/]])
+    until not strfind(pathname,[[\]],1,true) and not strfind(pathname,[[//]],1,true)
+  end
   if _IsUpper then
     return pathname:upper()
   else
@@ -2033,13 +2062,13 @@ function H.NormalizePathExt(path)
   path = strgsub(path,[[/]],[[\]])
   path = strgsub(path,[[\\]],[[\]])
   
-  local _,NumberOfBackslash = strgsub(path,[[\]],[[\]],-1)
+  local _,NumberOfBackslash = strgsub(path,[[\]],[[\]])
   if NumberOfBackslash > 0 then
     return strupper(path) --standard use of \,\\ or /
   end
 
   --there was no \ found, so no path or dots are part of the path
-  local _,NumberOfDots = strgsub(path,[[.]],[[.]],-1)
+  local _,NumberOfDots = strgsub(path,[[.]],[[.]])
   if NumberOfDots == 0 then
     --bad path
     return path
@@ -2074,7 +2103,13 @@ end
 --***************************************************************************************************
 function H.GetFilenameFromFilePath(pathname,IsUpper)
   local pname = H.NormalizePath(pathname,nil,IsUpper) or pathname
-  local tmp = string.match(pname,[[^.+\(.+)$]])
+  -- Linux: split on the native separator.
+  local tmp
+  if H.gIsWindows then
+    tmp = string.match(pname,[[^.+\(.+)$]])
+  else
+    tmp = string.match(pname,[[^.+/(.+)$]])
+  end
   if tmp then
     return tmp
   end
@@ -2092,16 +2127,32 @@ end
 --***************************************************************************************************
 function H.GetFolderPathFromFilePath(pathname)
 	if pathname then
-    pathname = strgsub(pathname,[[/]],[[\]])
-    local _,count = strgsub(pathname,[[\]],"",-1)
-    if count == 0 then
-      return ""
-    elseif count == 1 then
-      return strsub(pathname,1,strfind(pathname,[[\]]) - 1)
+    -- Linux: operate on the native separator.
+    if H.gIsWindows then
+      pathname = strgsub(pathname,[[/]],[[\]])
+      local _,count = strgsub(pathname,[[\]],"")
+      if count == 0 then
+        return ""
+      elseif count == 1 then
+        return strsub(pathname,1,strfind(pathname,[[\]]) - 1)
+      end
+      local temp1 = strgsub(pathname,[[\]],"X_TEMP_X",count-1)
+      local temp2 = strsub(temp1,1,strfind(temp1,[[\]])-1)
+      return strgsub(temp2,"X_TEMP_X",[[\]])
+    else
+      pathname = strgsub(pathname,[[\]],[[/]])
+      -- NOTE: no -1 limit: stock PUC lua gsub treats negative n as zero
+      -- substitutions, while upstream relies on its shipped lua tolerating -1.
+      local _,count = strgsub(pathname,[[/]],"")
+      if count == 0 then
+        return ""
+      elseif count == 1 then
+        return strsub(pathname,1,strfind(pathname,[[/]]) - 1)
+      end
+      local temp1 = strgsub(pathname,[[/]],"X_TEMP_X",count-1)
+      local temp2 = strsub(temp1,1,strfind(temp1,[[/]])-1)
+      return strgsub(temp2,"X_TEMP_X",[[/]])
     end
-    local temp1 = strgsub(pathname,[[\]],"X_TEMP_X",count-1)
-    local temp2 = strsub(temp1,1,strfind(temp1,[[\]])-1)
-    return strgsub(temp2,"X_TEMP_X",[[\]])
   else
     return pathname
   end
@@ -2120,7 +2171,103 @@ end
 --
 -- if silent == false then xcopy output is sent to xcopy_output.txt
 -- WILL NOT RENAME A FILE
+-- Linux: native recursive copier replacing xcopy/robocopy. Mirrors the xcopy
+-- conventions the call sites use: "*" in src, trailing "*" on dest, /s for
+-- recursion, and EXCLUDE:<file> substring patterns.
+function H.copy_posix(src,dest,param)
+  if string.sub(dest,-1) == "*" then dest = string.sub(dest,1,-2) end
+  local recursive = param ~= nil and string.find(param,"/s",1,true) ~= nil
+  local excludes = {}
+  local exfile = param and string.match(param,[[EXCLUDE:([^%s]+)]])
+  if exfile == nil then exfile = "xcopy_exclude_vscode.txt" end
+  local ef = io.open(exfile,"r")
+  if ef then
+    for line in ef:lines() do
+      line = line:gsub("\r","")
+      if line ~= "" then excludes[#excludes+1] = line end
+    end
+    ef:close()
+  end
+  local function excluded(p)
+    for _,pat in ipairs(excludes) do
+      if string.find(p,pat,1,true) then return true end
+    end
+    return false
+  end
+  local function copyfile(s,d)
+    if excluded(s) or excluded(d) then return true end
+    local dd = H.GetFolderPathFromFilePath(d)
+    if dd ~= "" then H.mkdir(dd) end
+    local inf = io.open(s,"rb")
+    if not inf then return false end
+    local data = inf:read("a"); inf:close()
+    local outf = io.open(d,"wb")
+    if not outf then return false end
+    outf:write(data); outf:close()
+    return true
+  end
+  local function copydir(s,d)
+    H.mkdir(d)
+    for file in lfs.dir(s) do
+      if file ~= "." and file ~= ".." then
+        local sp = s.."/"..file
+        local dp = d.."/"..file
+        local mode = lfs.attributes(sp,"mode")
+        if mode == "directory" then
+          if recursive then copydir(sp,dp) end
+        elseif mode == "file" then copyfile(sp,dp) end
+      end
+    end
+    return true
+  end
+  if string.find(src,"*",1,true) then
+    local dirpart = H.GetFolderPathFromFilePath(src)
+    if dirpart == "" then dirpart = "." end
+    local filepat = string.sub(src,#dirpart+2)
+    local pre,post = string.match(filepat,"^(.-)%*(.*)$")
+    local ok = true
+    for file in lfs.dir(dirpart) do
+      if file ~= "." and file ~= ".." then
+        local sp = dirpart.."/"..file
+        if lfs.attributes(sp,"mode") == "directory" then
+          if recursive then
+            local dp = dest
+            if string.sub(dest,-1) == "/" then dp = dest..file
+            else dp = dest.."/"..file end
+            if not copydir(sp,dp) then ok = false end
+          end
+        elseif lfs.attributes(sp,"mode") == "file"
+          and string.sub(file,1,#pre) == pre
+          and (post == "" or post == ".*" or string.sub(file,-#post) == post) then
+          local dp = dest
+          if lfs.attributes(dest,"mode") == "directory" or string.sub(dest,-1) == "/" then
+            dp = dest.."/"..file
+            if string.sub(dest,-1) == "/" then dp = dest..file end
+          end
+          if not copyfile(sp,dp) then ok = false end
+        end
+      end
+    end
+    return ok
+  end
+  local smode = lfs.attributes(src,"mode")
+  if smode == "directory" then
+    return copydir(src,dest)
+  elseif smode == "file" then
+    local d = dest
+    if lfs.attributes(dest,"mode") == "directory" or string.sub(dest,-1) == "/" then
+      if string.sub(dest,-1) == "/" then d = dest..H.GetFilenameFromFilePath(src,false)
+      else d = dest.."/"..H.GetFilenameFromFilePath(src,false) end
+    end
+    if copyfile(src,d) then return true end
+    return false
+  end
+  return false
+end
+
+--***************************************************************************************************
 function H.CopyFile(src,dest,param,IsSilent)
+  if not H.gIsWindows then return H.copy_posix(src,dest,param) end
   local IsNotSilent = false
   local xcopy_output = "xcopy_output.txt"
   if IsSilent == nil or IsSilent then
@@ -2146,6 +2293,7 @@ end
 --***************************************************************************************************
 -- if silent == false then xcopy output is sent to Robocopy_output.txt
 function H.RobocopyDir(src,dest,param,IsSilent)
+  if not H.gIsWindows then return H.copy_posix(src,dest,param) end
   local IsNotSilent = false
   local Robocopy_output = "Robocopy_output.txt"
   if IsSilent == nil or IsSilent then
@@ -2198,6 +2346,25 @@ end
 
 --***************************************************************************************************
 function H.DeleteFile(pathname,IsDeleteInSub,IsSilent)
+  if not H.gIsWindows then
+    if pathname == nil or pathname == "" then return end
+    if string.find(pathname,"*",1,true) then
+      local dirpart = H.GetFolderPathFromFilePath(pathname)
+      if dirpart == "" then dirpart = "." end
+      local filepat = string.sub(pathname,#dirpart+2)
+      local pre,post = string.match(filepat,"^(.-)%*(.*)$")
+      for file in lfs.dir(dirpart) do
+        if file ~= "." and file ~= ".."
+          and string.sub(file,1,#pre) == pre
+          and (post == "" or post == ".*" or string.sub(file,-#post) == post) then
+          os.remove(dirpart.."/"..file)
+        end
+      end
+      return
+    end
+    os.remove(pathname)
+    return
+  end
   --os.remove(OLDfilepathname)    --don't use, can get stuck
   if IsDeleteInSub == nil then
     IsDeleteInSub = true
@@ -2264,6 +2431,17 @@ end
 
 --***************************************************************************************************
 function H.mkdir(path)
+  if not H.gIsWindows then
+    -- Linux: stock version drops the leading / of absolute paths
+    path = strgsub(path,[[\]],[[/]])
+    local pStr = ""
+    if string.sub(path,1,1) == "/" then pStr = "/" end
+    for dir in string.gmatch(path,"[^/]+") do
+      pStr = pStr .. dir .. "/"
+      lfs.mkdir(pStr)
+    end
+    return
+  end
   local sep = strsub(package.config,1,1)
   local pStr = ""
   for dir in string.gmatch(path,"[^" .. sep .. "]+") do
@@ -2274,6 +2452,7 @@ end
 
 --***************************************************************************************************
 function H.DeleteDir(dir) --recursive
+  if not H.gIsWindows and not H.IsDirExist(dir) then return end -- Linux: lfs.dir errors on missing dirs
   for file in lfs.dir(dir) do
     local file_path = dir..'/'..file
     if file ~= "." and file ~= ".." then
@@ -2300,7 +2479,9 @@ function H.GetMainDirList(path,IsStripPath)
   for file in lfs.dir(path) do
     -- H.printf(" - [%s]",file)
     if file ~= "." and file ~= ".." then
-      local f = path..[[\]]..file
+      local join = H.gPS
+    if string.sub(path,-1) == [[/]] or string.sub(path,-1) == [[\]] then join = "" end
+    local f = path..join..file
       local attr,msg = lfs.attributes(f)
       
       if attr then
@@ -2343,7 +2524,9 @@ function H.ListDir(DirList, path, IsStripPath, IsSubDir, IsPathLengthOK) -- recu
   
   for file in lfs.dir(path) do
     if file ~= "." and file ~= ".." and file ~= "EXPORTED" and strmatch(file,H.AMUMSSstring) == nil then
-      local f = path..[[\]]..file
+      local join = H.gPS
+    if string.sub(path,-1) == [[/]] or string.sub(path,-1) == [[\]] then join = "" end
+    local f = path..join..file
       local attr,msg = lfs.attributes(f)
       
       if attr then      
@@ -2415,7 +2598,7 @@ local function GetDirList(ModScriptValidContent,extension,IsModScriptfolderOnly)
         local shortPath = strsub(H.trim(thisPath),cutPoint + 1)
         -- print("    shortPath = ["..shortPath.."]")
         
-        local _,n = strgsub(shortPath,[[\]],"",-1)
+        local _,n = strgsub(shortPath,H.gPS,"")
         if n == 1 then
           -- this file is directly in ModScript folder
           -- H.printf("  - %s",ModScriptValidContent[i][1])
@@ -2441,7 +2624,7 @@ local function GetDirList(ModScriptValidContent,extension,IsModScriptfolderOnly)
         local shortPath = strsub(H.trim(thisPath),cutPoint + 1)
         -- print("    shortPath = ["..shortPath.."]") -- ex.: shortPath = [ModScript\3DeepTest\3Deep\_MOD_DUD_AtmosphereBurnFX\]
         
-        local _,n = strgsub(shortPath,[[\]],"",-1)
+        local _,n = strgsub(shortPath,H.gPS,"")
         if n < 5 then -- sub-folder depth
            tempList[#tempList+1] = ModScriptValidContent[i]
         end
@@ -2529,7 +2712,7 @@ function H.GetModScriptValidContent(pathToModScript,IsVerbose)
           local DNU_folder = strgsub(d,DONOTUSE_name,"")
           -- print("DNU_folder = ["..DNU_folder.."]")
           -- print("H.gMASTER_FOLDER_PATH = ["..H.gMASTER_FOLDER_PATH.."]")
-          if H.gMASTER_FOLDER_PATH..[[ModScript\]] == DNU_folder then
+          if H.gMASTER_FOLDER_PATH..[[ModScript/]] == DNU_folder then
             -- skip, this folder IS ModScript AND the DONOTUSE flag is set
             -- print("SKIPPING ModScript folder")
             IsModScriptDONOTUSE = true
@@ -2548,8 +2731,8 @@ function H.GetModScriptValidContent(pathToModScript,IsVerbose)
         -- we need to purge ALL ModScript files
         for i=1,#DirList do
           local d = strupper(H.GetRelPathToScript(DirList[i]))
-          local _,count = strgsub(d,[[MODSCRIPT\]],[[MODSCRIPT\]],-1)
-          if strsub(d,-10) == [[MODSCRIPT\]] and count == 1 then
+          local _,count = strgsub(d,[[MODSCRIPT/]],[[MODSCRIPT/]])
+          if strsub(d,-10) == [[MODSCRIPT/]] and count == 1 then
             -- H.printf("   ==> to empty: [%s]    [%s]",d,DirList[i])
             DirList[i] = ""
           end
@@ -2564,7 +2747,7 @@ function H.GetModScriptValidContent(pathToModScript,IsVerbose)
       -- remove all 'MEFTI' folders, 'ModHelperScripts'+'Disabled scripts and paks'+'GlobalMEFTI' folder content
       for i=1,#DirList do
         local d = H.trim(DirList[i])
-        if d ~= "" and not strfind(d,[[\]]..H.gMEFTI_name..[[\]],1,true)
+        if d ~= "" and not strfind(d,H.gPS..H.gMEFTI_name..H.gPS,1,true)
             and not strfind(d,"Disabled scripts and paks",1,true)
             and not strfind(d,"GlobalMEFTI",1,true)
             and not strfind(d,"ModHelperScripts",1,true) then
@@ -2624,16 +2807,16 @@ function H.GetModScriptValidContent(pathToModScript,IsVerbose)
           if IsDEV then print("  fullPathName    = ["..fullPath.."] on i = "..i) end
           if IsDEV then print("    thisPath full = ["..thisPath.."]") end
 
-          local meftiPath = [[..\]]..strsub(H.trim(thisPath),cutPoint + 1)..[[MEFTI]]
+          local meftiPath = [[../]]..strsub(H.trim(thisPath),cutPoint + 1)..[[MEFTI]]
           if IsDEV then print("    meftiPath     = ["..meftiPath.."]") end
           
           local IsMEFTIexist = false -- MEFTI folder in ModScript is never used
-          if meftiPath ~= [[..\ModScript\MEFTI]] then
+          if meftiPath ~= [[../ModScript/MEFTI]] then
             IsMEFTIexist = H.IsDirExist(meftiPath)
           end
           if IsDEV then print("        %%% 1: IsMEFTIexist = ["..tostring(IsMEFTIexist).."]") end
           
-          local ISCombineFlagExist = H.IsFileExist([[..\]]..strsub(H.trim(thisPath),cutPoint + 1)..COMBINE_name)
+          local ISCombineFlagExist = H.IsFileExist([[../]]..strsub(H.trim(thisPath),cutPoint + 1)..COMBINE_name)
           if IsDEV then print("        %%% 1: ISCombineFlagExist = ["..tostring(ISCombineFlagExist).."]") end
           
           local IsFirstEncounter = false
@@ -2650,7 +2833,7 @@ function H.GetModScriptValidContent(pathToModScript,IsVerbose)
               -- if IsDEV then print("    d full = ["..thisPath.."]") end
               
               -- print("["..strupper(strsub(d,-10)).."]")
-              if not ISCombineFlagExist and strupper(strsub(d,-10)) == [[MODSCRIPT\]] and  EXT == ".LUA" then
+              if not ISCombineFlagExist and strupper(strsub(d,-10)) == [[MODSCRIPT/]] and  EXT == ".LUA" then
                 -- if not H.IsFileExist([[..\]]..strsub(H.trim(thisPath),cutPoint + 1)..DONOTUSE_name) then
                   -- print("DONOTUSE_name = ["..[[..\]]..strsub(H.trim(thisPath),cutPoint + 1)..DONOTUSE_name.."]")
                   -- if ISCombineFlagExist then
@@ -2754,7 +2937,7 @@ function H.GetModScriptValidContent(pathToModScript,IsVerbose)
                 else
                   -- if IsDEV then print("      >>> still not 1st encounter") end
                 end --if IsFirstEncounter then
-              end --if strupper(strsub(d,-10)) == [[MODSCRIPT\]] then
+              end --if strupper(strsub(d,-10)) == [[MODSCRIPT/]] then
             end --if ScriptTypeList[j] == nil then
           end --for j=1,#ScriptList do
         end --if thisPath == previousPath then
@@ -2831,9 +3014,14 @@ function H.GetModScriptValidContent(pathToModScript,IsVerbose)
 
   -- local startCMSD = os.clock()
 -- H.printf(" %s A: before Robocopy... (%s) %s",H.gcWARNING,H.dClock(os.clock()-startCMSD,"start"),H._zDEFAULT)
-  local cmd = [[robocopy ]]..pathToModScript..[[\. ]]..pathToModScript..[[\. *.* /S /V /R:0 /L /NP /NS /NC /NDL /NJH /NJS /MT:12]]
-  
-  local dirList = H.GetList(cmd,true)
+  local dirList
+  if not H.gIsWindows then
+    -- Linux: robocopy /L yields absolute paths and the cutPoint math needs them.
+    dirList = H.ListDir({}, H.gMASTER_FOLDER_PATH..[[ModScript/]], false, true)
+  else
+    local cmd = [[robocopy ]]..pathToModScript..[[\. ]]..pathToModScript..[[\. *.* /S /V /R:0 /L /NP /NS /NC /NDL /NJH /NJS /MT:12]]
+    dirList = H.GetList(cmd,true)
+  end
 
   if IsVerbose then
     H.printf("   Found %d files",#dirList)
@@ -2881,10 +3069,10 @@ function H.GetModScriptValidContent(pathToModScript,IsVerbose)
     --local tmp = strgsub(dirlist[i],H.gMASTER_FOLDER_PATH..[[ModScript\]],"")
     
     -- do this instead
-    local pos = strfind(strupper(ScriptList[i]),[[MODSCRIPT\]],1,true)
+    local pos = strfind(strupper(ScriptList[i]),[[MODSCRIPT/]],1,true)
     if pos then
       local tmp = strsub(ScriptList[i],pos + 10)
-      local _,n = strgsub(tmp,[[\]],"",-1)
+      local _,n = strgsub(tmp,H.gPS,"")
 
       KeepThis[#KeepThis+1] = {}
       KeepThis[#KeepThis][1] = ScriptList[i]
@@ -2930,10 +3118,10 @@ function H.GetModScriptValidContent(pathToModScript,IsVerbose)
     --local tmp = strgsub(dirlist[i],H.gMASTER_FOLDER_PATH..[[ModScript\]],"")
     
     -- do this instead
-    local pos = strfind(strupper(dirList[i]),[[MODSCRIPT\]],1,true)
+    local pos = strfind(strupper(dirList[i]),[[MODSCRIPT/]],1,true)
     if pos then
       local tmp = strsub(dirList[i],pos + 10)
-      local _,n = strgsub(tmp,[[\]],"",-1)
+      local _,n = strgsub(tmp,H.gPS,"")
 
       if n > maxFolderDepthAllowed then
         -- folderTooDeep
@@ -4035,7 +4223,7 @@ function H.GetPropertyEXT(property,IsRegular,FileTable,startIndex,endIndex)
   H.DEBUG_VCTproperty_print(string.format("### prop=[%s] IsRegular=(%s) %d-%d",prop,tostring(IsRegular),(startIndex+1),endIndex))
   
   if firstPosEnd then
-    _,lineNumber = strgsub(strsub(section,1,firstPosEnd),'>','>',-1)
+    _,lineNumber = strgsub(strsub(section,1,firstPosEnd),'>','>')
     local tableIndex = startIndex + 1 + lineNumber
     H.DEBUG_VCTproperty_print("### A: Line Found ("..tostring(lineNumber)..") using table.concat: ["..FileTable[tableIndex].."] at "..(tableIndex))    
     
@@ -4049,7 +4237,7 @@ function H.GetPropertyEXT(property,IsRegular,FileTable,startIndex,endIndex)
     _,nextPos = strfind(section,prop,firstPosEnd+1,not IsRegular)
     
     if nextPos then
-      _,lineNumber = strgsub(strsub(section,1,nextPos),'>','>',-1)
+      _,lineNumber = strgsub(strsub(section,1,nextPos),'>','>')
       tableIndex = startIndex + 1 + lineNumber
       H.DEBUG_VCTproperty_print("### B: linesNumFound ("..tostring(lineNumber)..") using table.concat: ["..FileTable[tableIndex].."] at "..(tableIndex))
 
@@ -4068,7 +4256,7 @@ function H.GetPropertyEXT(property,IsRegular,FileTable,startIndex,endIndex)
         
         if nextPos then
           H.DEBUG_VCTproperty_print("###     into gsub at currentPos = "..currentPos..", endPos = "..endPos)
-          _,lineNumber = strgsub(strsub(section,currentPos,endPos),'>','>',-1) -- slow has endPos increases if section is too big
+          _,lineNumber = strgsub(strsub(section,currentPos,endPos),'>','>') -- slow has endPos increases if section is too big
           
           currentPos = endPos
           tableIndex = tableIndex + lineNumber
@@ -4376,6 +4564,11 @@ end
 
 --***************************************************************************************************
 function H.sleep(s)
+  if not H.gIsWindows then
+    if s==nil then s=1 end
+    os.execute([[sleep ]]..math.tointeger(s+1))
+    return
+  end
   -- s==2 =>> 1 second delay
 	if s==nil then s=1 end
   s = math.tointeger(s+1)
@@ -4465,9 +4658,9 @@ end
 do -- ALWAYS EXECUTED
   if #H.gpak_listTable == 0 then
     -- load up table gpak_listTable
-    local cDir = lfs.currentdir()..[[\]]
+    local cDir = lfs.currentdir()..H.gPS
     if not string.find(cDir,[[MODBUILDER]]) then
-      cDir = cDir..[[MODBUILDER\]]
+      cDir = cDir..[[MODBUILDER]]..H.gPS
     end
     H.gpak_listTable = H.ParseTextFileIntoTable(cDir.."pak_list.txt")
     -- H.gpak_listTable,msg = H.ParseTextFileIntoTable(cDir.."pak_list.txt")
@@ -4488,11 +4681,29 @@ do -- ALWAYS EXECUTED
         -- local file = strgsub(strsub(line,1,strfind(line," ",1,true)-1),[[/]],[[\]])
         local file = strgsub(line,[[/]],[[\]])
         H.gFastPAKlist[file] = NMSPAKname
+        -- Linux: twin keys so lookups hit whatever separator MBIN_FILE_SOURCE uses
+        H.gFastPAKlist[strgsub(file,[[\]],[[/]])] = NMSPAKname
+        -- Linux: flat pak listings store bare filenames; index those too
+        do local base = string.match(file,[[[^/\\]*$]])
+          if base ~= "" and H.gFastPAKlist[base] == nil then H.gFastPAKlist[base] = NMSPAKname end
+        end
       end
     else
       NMSPAKname = ""
     end
   end
+end
+
+--***************************************************************************************************
+-- Linux: pak-list keys come in backslash, posix, and bare-flat forms.
+-- Try the full key first, then the bare filename (first pak wins, as built).
+function H.FastPakLookup(key)
+  if key == nil or key == "" then return nil end
+  local hit = H.gFastPAKlist[key]
+  if hit == nil then
+    hit = H.gFastPAKlist[H.GetFilenameFromFilePath(key,false)]
+  end
+  return hit
 end
 
 --***************************************************************************************************
@@ -4503,24 +4714,33 @@ function H.LocatePAK(filename)
   -- H.pv("["..filename.."]")
   
   local Pak_FileName = H.gFastPAKlist[filename]
-  
+
+  if Pak_FileName == nil then
+    -- Linux: also try the bare filename (flat pak listings)
+    Pak_FileName = H.gFastPAKlist[H.GetFilenameFromFilePath(filename,false)]
+  end
+
   if Pak_FileName == nil then
     if #H.gpak_listTable == 0 then
       H.gpak_listTable = H.ParseTextFileIntoTable("pak_list.txt")
     end
     local pak_listTable = H.gpak_listTable
-    
+    local queryBase = H.GetFilenameFromFilePath(filename,false)
+    local Pak_CurrentName = nil
+
     -- H.pv(#pak_listTable.." lines")
     for i=1,#pak_listTable,1 do
       local line = pak_listTable[i]
       if line then
         if strfind(line,"Listing ",1,true) then
           local start,stop = strfind(line,"Listing ",1,true)
-          --remember Pak_FileName for when we find the filename
-          Pak_FileName = strsub(line, stop+1)
-          -- H.pv("["..Pak_FileName.."]")
+          --remember current pak, but only keep it when we actually match
+          Pak_FileName = nil
+          Pak_CurrentName = strsub(line, stop+1)
+          -- H.pv("["..Pak_CurrentName.."]")
         else
-          if strfind(line,filename,1,true) then
+          if strfind(line,filename,1,true) or (queryBase ~= "" and line == queryBase) then
+            Pak_FileName = Pak_CurrentName
             break
           end
         end
@@ -4588,7 +4808,7 @@ function H.MXML_PC_EXMLtoMBIN(s)
   local tmp = H.NormalizePath(s):gsub(".MXML$",".MBIN"):gsub(".MBIN.PC$",".MBIN"):gsub(".EXML$",".MBIN")
   if strfind(tmp,"[\\/]") == nil then
     -- adjust for missing GLOBALS sub-folder
-    tmp = [[GLOBALS\]]..tmp
+    tmp = [[GLOBALS/]]..tmp
   end
   -- printf("tmp = [%s]",tmp)
   return tmp
@@ -4715,12 +4935,12 @@ function H.MBINCompiler_C(sourcePath,IsWithThreads)
   local success = ""
 
   --clear .log
-  local cmd = [[del MBINCompiler.log 1>NUL 2>NUL]]
+  local cmd = H.gIsWindows and [[del MBINCompiler.log 1>NUL 2>NUL]] or [[rm -f MBINCompiler.log >/dev/null 2>&1]]
   os.execute(cmd)
 
   local start = os.clock()
   print(H._zBRIGHTGREEN.."     @@@ creating MBIN files "..threadInfo.."..."..H._zDEFAULT)
-  local cmd = [[MBINCompiler.exe -q -y -f -iMXML --exclude=";LocTable.MXML;" ]]..withThreads..[[ "]]..sourcePath --..[["]]
+  local cmd = [[MBINCompiler.exe -q -y -f -iMXML --exclude=";LocTable.MXML;" ]]..withThreads..[[ "]]..sourcePath..[["]]
   -- local cmd = [[MBINCompiler.exe -y -f -iMXML --exclude=";" ]]..withThreads..[[ "]]..sourcePath --..[["]]
 
   local state,str,num = os.execute(cmd) --fast and same output as batch
@@ -4751,7 +4971,7 @@ function H.MBINCompiler_D(sourcePath, IsHideVersionInfo, IsStream, IsSilent, msg
   local result = ""
 
   --clear .log
-  local cmd = [[del MBINCompiler.log 1>NUL 2>NUL]]
+  local cmd = H.gIsWindows and [[del MBINCompiler.log 1>NUL 2>NUL]] or [[rm -f MBINCompiler.log >/dev/null 2>&1]]
   os.execute(cmd)
 
   local sHideVersionInfo = ""
@@ -4786,7 +5006,7 @@ function H.MBINCompiler_D(sourcePath, IsHideVersionInfo, IsStream, IsSilent, msg
   else
     print(msg)
   end
-  local cmd = [[MBINCompiler.exe -y -f -iMBIN]]..sSilent..sHideVersionInfo..sStream..sTyped..[[ --exclude=";" "]]..sourcePath --..[["]]
+  local cmd = [[MBINCompiler.exe -y -f -iMBIN]]..sSilent..sHideVersionInfo..sStream..sTyped..[[ --exclude=";" "]]..sourcePath..[["]]
   -- H.printf("cmd = [%s]",cmd)
 
   --Capture the output sent to cmd window
@@ -4980,6 +5200,10 @@ function H.psarc_CL(action,pakDestPathFromMOD,pakFilename,IsCompress,silent)
       H.printf("cmd = [%s]",cmd)    
       -- result = os.capture(cmd)
       result = os.execute(cmd)
+      if not H.gIsWindows and H.IsFileExist("filenames.txt") then
+        -- Linux: hgpaktool ignores -O and writes ./filenames.txt
+        os.rename("filenames.txt","PAK_FILE_CONTENT.txt")
+      end
       if result and result ~= "" then
         success = "OK"
       end
@@ -5089,7 +5313,7 @@ function H.psarc_E(pakPath,pakName,destPath,source,options,IsSilent)
     --extract (--input=FILE || the first file argument) (--to=DIRECTORY || 'default' current directory) source(the exact name to extract)
     cmd = [[psarc.exe extract "]]..pakPath..pakName..[[" --to="]]..destPath..[[" ]]..source..[[ ]]..options..silent
   elseif pakType == "HGPAK" then
-    cmd = [[hgpaktool.exe -U --upper -A -O "]]..destPath..[[" -f ]]..source..[[ "]]..pakPath..pakName..[[" ]]
+    cmd = [[hgpaktool.exe -U --upper -O "]]..destPath..[[" -f ]]..source..[[ "]]..pakPath..pakName..[[" ]]
   elseif pakType == "ZIP" then
     -- cmd = [[hgpaktool.exe -U --upper -O "]]..destPath..[[" -f ]]..source..[[ "]]..pakPath..pakName..[[" ]]
   elseif pakType == "7z" then
@@ -5530,7 +5754,7 @@ end
 function H.ScrubMXMLs(MXML_org, MXML_mod, scrubLevel)
   local IsDebugWriteToFile = H.DEBUG_EXML -- DEBUG
   local IsDebugAnalyzeXML = H.DEBUG_EXML -- DEBUG
-  local saveTo = [[..\TOOLS\EXML_Testing\]]
+  local saveTo = [[../TOOLS/EXML_Testing/]]
 
   -- H.printf(" Scrub level = %d",scrubLevel)
 
@@ -5928,7 +6152,7 @@ function H.MXMLtoEXML(MXMLmod, MXMLorg) -- , IsFileUsingLinked NOT USED
   local printALT = print
   local WFAK
   
-  local saveTo = [[..\TOOLS\EXML_Testing\]]
+  local saveTo = [[../TOOLS/EXML_Testing/]]
 
   local A0, A1, B0, B1, C0 = "", "", "", "", ""               
   if DEBUG then
@@ -6004,8 +6228,8 @@ function H.MXMLtoEXML(MXMLmod, MXMLorg) -- , IsFileUsingLinked NOT USED
     -- Check if exml is structurally valid
     local msg = msg or ""
     local exmlString = table.concat(exml,"\n")
-    local _,numHOS = strgsub(exmlString,[[">]],[[">]],-1)
-    local _,numProperty = strgsub(exmlString,[[</Pro]],[[</Pro]],-1)
+    local _,numHOS = strgsub(exmlString,[[">]],[[">]])
+    local _,numProperty = strgsub(exmlString,[[</Pro]],[[</Pro]])
     local IsValidExml = true
     if numHOS - 1 ~= numProperty then -- exclude <Data...>
       H.printf(H.gcWARNING..[[>>> [WARNING] created EXML is invalid: #HOS (%d ~= %d) #/Property %s]]..H._zDEFAULT,numHOS - 1 ,numProperty,msg)
@@ -7361,13 +7585,13 @@ function H.ProcessMBINtable(MBIN_table, IsCOMBINE_MODS_flag, _bScriptName, which
     -- This is NOT REDUNDANT, also see above
     -- for when the user puts an .MXML or other file like .BIN in ModScript and is referenced in the scripts
     local IsInModScript = false
-    if H.IsFileExist([[..\ModScript\]]..EXML_FILE) then
-      H.CopyFile([[..\ModScript\]]..EXML_FILE, [[.\MOD\]]..EXML_FILE..[[*]], H.paramFiles)
+    if H.IsFileExist([[../ModScript/]]..EXML_FILE) then
+      H.CopyFile([[../ModScript/]]..EXML_FILE, [[./MOD/]]..EXML_FILE..[[*]], H.paramFiles)
       IsInModScript = true
     end
     -- END: This is NOT REDUNDANT, also see above
     
-    if H.IsFileExist([[.\MOD\]]..EXML_FILE) then
+    if H.IsFileExist([[./MOD/]]..EXML_FILE) then
       -- table.remove(MBIN_table,i) -- done already
       MBIN_table[i] = "NIL"
       
@@ -7437,23 +7661,23 @@ function H.ProcessMBINtable(MBIN_table, IsCOMBINE_MODS_flag, _bScriptName, which
             -- printf("D3: MBIN_table[%d] = <%s>",i,MBIN_table[i])
             -- this one was already decompiled, delete the .MBIN so we do not decompile it again
             -- all other extension files we keep
-            H.DeleteFile([[.\MOD\]]..MBIN_table[i])
+            H.DeleteFile([[./MOD/]]..MBIN_table[i])
           end
           
           -- print(MBIN_table[i].." BEFORE nil "..i)
           MBIN_table[i] = "NIL"
           
         else
-          if H.IsFileExist([[.\MOD\]]..MBIN_table[i]..PCExt) then
+          if H.IsFileExist([[./MOD/]]..MBIN_table[i]..PCExt) then
           -- printf("C1: MBIN_table[%d] = <%s>",i,MBIN_table[i])
             -- file came from a pak, skip
           else
-            if not H.IsFileExist([[.\_TEMP\EXTRACTED\]]..MBIN_table[i]..PCExt) then
+            if not H.IsFileExist([[./_TEMP/EXTRACTED/]]..MBIN_table[i]..PCExt) then
               -- printf("C2 MBIN_table[%d]..PCExt = <%s>",i,MBIN_table[i]..PCExt)
               -- find it in NMS_PCBANKS paks
               
               -- in which NMSpak?
-              local Pak_FileName = H.gFastPAKlist[MBIN_table[i]..PCExt]
+              local Pak_FileName = H.FastPakLookup(MBIN_table[i]..PCExt)
               
               if Pak_FileName then
                 extractInfo[#extractInfo+1] = {}
@@ -7472,17 +7696,17 @@ function H.ProcessMBINtable(MBIN_table, IsCOMBINE_MODS_flag, _bScriptName, which
               local EXML_FILE = MBIN_table[i]:gsub(".MBIN",".MXML")
               -- printf("C4:      EXML_FILE = <%s>",EXML_FILE)
               -- print("X:     EXML_FILE = ["..EXML_FILE.."]")
-              -- local tmp = [[.\_TEMP\DECOMPILED\]]..EXML_FILE
-              -- print([[.\_TEMP\DECOMPILED\]]..EXML_FILE,tmp)
-              -- printf([=[H.IsFileExist([[.\_TEMP\DECOMPILED\]]..EXML_FILE) = %s]=],tostring(H.IsFileExist(tmp)))
-              if not H.IsFileExist([[.\_TEMP\DECOMPILED\]]..EXML_FILE) then
+              -- local tmp = [[./_TEMP/DECOMPILED/]]..EXML_FILE
+              -- print([[./_TEMP/DECOMPILED/]]..EXML_FILE,tmp)
+              -- printf([=[H.IsFileExist([[./_TEMP/DECOMPILED/]]..EXML_FILE) = %s]=],tostring(H.IsFileExist(tmp)))
+              if not H.IsFileExist([[./_TEMP/DECOMPILED/]]..EXML_FILE) then
                 -- printf("D1: MBIN_table[%d] = <%s>",i,MBIN_table[i])
                 print("   >>> Already extracted, copying to MOD: "..MBIN_table[i])
-                H.CopyFile([[.\_TEMP\EXTRACTED\]]..MBIN_table[i]..PCExt,[[.\MOD\]]..MBIN_table[i]..PCExt..[[*]],H.paramFiles)
+                H.CopyFile([[./_TEMP/EXTRACTED/]]..MBIN_table[i]..PCExt,[[./MOD/]]..MBIN_table[i]..PCExt..[[*]],H.paramFiles)
               else
                 -- printf("D2: MBIN_table[%d] = <%s>",i,MBIN_table[i])
                 -- print("   >>> Already decompiled, copying to MOD: "..EXML_FILE)
-                H.CopyFile([[.\_TEMP\DECOMPILED\]]..EXML_FILE,[[.\MOD\]]..EXML_FILE..[[*]],H.paramFiles)
+                H.CopyFile([[./_TEMP/DECOMPILED/]]..EXML_FILE,[[./MOD/]]..EXML_FILE..[[*]],H.paramFiles)
 
                 -- MAYBE we could open it from DECOMPILED instead of copying to MOD
 
@@ -7490,14 +7714,14 @@ function H.ProcessMBINtable(MBIN_table, IsCOMBINE_MODS_flag, _bScriptName, which
                   -- printf("D3: MBIN_table[%d] = <%s>",i,MBIN_table[i])
                   -- this one was already decompiled, delete the .MBIN so we do not decompile it again
                   -- all other extension files we keep
-                  H.DeleteFile([[.\MOD\]]..MBIN_table[i]..PCExt)
+                  H.DeleteFile([[./MOD/]]..MBIN_table[i]..PCExt)
                 end
                 -- table.remove(MBIN_table,i)
                 -- print(MBIN_table[i].." BEFORE nil "..i)
                 MBIN_table[i] = "NIL"
-              end -- if not H.IsFileExist([[.\_TEMP\DECOMPILED\]]..EXML_FILE) then
-            end -- if not H.IsFileExist([[.\_TEMP\EXTRACTED\]]..MBIN_table[i]) then
-          end -- if H.IsFileExist([[.\MOD\]]..MBIN_table[i]) then
+              end -- if not H.IsFileExist([[./_TEMP/DECOMPILED/]]..EXML_FILE) then
+            end -- if not H.IsFileExist([[./_TEMP/EXTRACTED/]]..MBIN_table[i]) then
+          end -- if H.IsFileExist([[./MOD/]]..MBIN_table[i]) then
         end --if H.EXMLorgTable[strsub(MBIN_table[i]1,-6)] then
       end -- if MBIN_table[i] then
     end -- if #MBIN_table > 0 then
@@ -7530,7 +7754,10 @@ function H.ProcessMBINtable(MBIN_table, IsCOMBINE_MODS_flag, _bScriptName, which
           -- input[#input+1] = [[    <extract archive="]]..H.gNMS_PCBANKS_FOLDER_PATH..currentPakName..[[" to=".\_TEMP\EXTRACTED" stripall="false" skipmissingfiles="true" overwrite="false">]]
           -- printf("H.gNMS_PCBANKS_FOLDER_PATH = %s",H.gNMS_PCBANKS_FOLDER_PATH)
           -- printf("currentPakName = %s",currentPakName)
-          local tmp = (H.gNMS_PCBANKS_FOLDER_PATH..currentPakName):gsub([[/]],[[\]]):gsub([[\]],[[\\]])
+          local tmp = H.gNMS_PCBANKS_FOLDER_PATH..currentPakName
+          -- Linux: lookup values are already absolute pak paths
+          if not H.gIsWindows and string.sub(currentPakName,1,1) == "/" then tmp = currentPakName end
+          if H.gIsWindows then tmp = tmp:gsub([[/]],[[\]]):gsub([[\]],[[\\]]) end
           -- printf("tmp = %s",tmp)
           input[#input+1] = [[  "]]..tmp..[=[": []=]
           -- printf("input[#input] = %s",input[#input])
@@ -7560,8 +7787,32 @@ function H.ProcessMBINtable(MBIN_table, IsCOMBINE_MODS_flag, _bScriptName, which
       
       -- now use input file to try extracting from ModScript paks
       -- local cmd = [[cmd /c psarc.exe --xml=ExtractFromNMSPaks.xml >Extract_NMSPaksResult.txt]]
-      local cmd = [[hgpaktool.exe -U --upper -A -O ".\_TEMP\EXTRACTED" "ExtractFromNMSPaks.json"]]
+      local cmd = H.gIsWindows and [[hgpaktool.exe -U --upper -A -O ".\_TEMP\EXTRACTED" "ExtractFromNMSPaks.json"]] or [[hgpaktool.exe -U --upper -O "./_TEMP/EXTRACTED" "ExtractFromNMSPaks.json"]]
       local state,sResult,nResult = os.execute(cmd)
+
+      if not H.gIsWindows then
+        -- Linux: hgpaktool extracts flat and leaves 0-byte artifacts, so
+        -- re-place entries into their subdirs
+        for k=1,#extractInfo do
+          local rel = extractInfo[k][2]
+          if rel and rel ~= "" then
+            local full = "./_TEMP/EXTRACTED/"..rel
+            local flat = "./_TEMP/EXTRACTED/"..H.GetFilenameFromFilePath(rel,false)
+            local fullSize = lfs.attributes(full,"size")
+            local flatSize = lfs.attributes(flat,"size")
+            if fullSize == nil and flatSize ~= nil and flatSize > 0 then
+              H.mkdir(H.GetFolderPathFromFilePath(full))
+              os.rename(flat,full)
+            elseif fullSize == 0 then
+              os.remove(full)
+              if flat ~= full and flatSize ~= nil and flatSize > 0 then
+                H.mkdir(H.GetFolderPathFromFilePath(full))
+                os.rename(flat,full)
+              end
+            end
+          end
+        end
+      end
       
       -- psarc error (BUG): XML error on line #113, error = 0x80420005 = -2143158267
       --              that is on line with </extract>
@@ -7590,12 +7841,12 @@ function H.ProcessMBINtable(MBIN_table, IsCOMBINE_MODS_flag, _bScriptName, which
           PCExt = [[.PC]]
         end
 
-        if H.IsFileExist([[.\_TEMP\EXTRACTED\]]..MBIN_table[i]..PCExt) then
+        if H.IsFileExist([[./_TEMP/EXTRACTED/]]..MBIN_table[i]..PCExt) then
           -- printf("E1: MBIN_table[%d] = <%s>",i,MBIN_table[i])
-          H.CopyFile([[.\_TEMP\EXTRACTED\]]..MBIN_table[i]..PCExt,[[.\MOD\]]..MBIN_table[i]..PCExt..[[*]],H.paramFiles)
+          H.CopyFile([[./_TEMP/EXTRACTED/]]..MBIN_table[i]..PCExt,[[./MOD/]]..MBIN_table[i]..PCExt..[[*]],H.paramFiles)
         end
 
-        if not H.IsFileExist([[.\MOD\]]..MBIN_table[i]..PCExt) then
+        if not H.IsFileExist([[./MOD/]]..MBIN_table[i]..PCExt) then
           print(">>> "..H.gcWARNING.." [WARNING] Could not EXTRACT "..MBIN_table[i]..PCExt.." "..H._zDEFAULT)
           if whichReport == "AMUMSS" then
             H.Report("","Could not EXTRACT "..MBIN_table[i]..PCExt,"WARNING")
@@ -7634,7 +7885,7 @@ function H.ProcessMBINtable(MBIN_table, IsCOMBINE_MODS_flag, _bScriptName, which
 -- H.WFAKD()            
     if IsDoingDecompile then
       -- print(">>> BEFORE 1st MBINCompiler_D")
-      local status,result = H.MBINCompiler_D([[.\MOD]],false,false,true,"",true)
+      local status,result = H.MBINCompiler_D([[./MOD]],false,false,true,"",true)
       -- H.printf("status = [%s], result = [%s]",status,result)
       -- print(">>> AFTER 1st MBINCompiler_D")
     end
@@ -7644,29 +7895,29 @@ function H.ProcessMBINtable(MBIN_table, IsCOMBINE_MODS_flag, _bScriptName, which
     for i=#MBIN_table,1,-1 do
       if MBIN_table[i] then
         local EXML_FILE = MBIN_table[i]:gsub(".MBIN$",".MXML")
-        if H.IsFileExist([[.\MOD\]]..EXML_FILE) then
+        if H.IsFileExist([[./MOD/]]..EXML_FILE) then
           -- printf("Y1: MBIN_table[%d] = <%s>",i,MBIN_table[i])
           
 -- discover array_size flags and purge file
-HandleArraySize([[.\MOD\]]..EXML_FILE)
+HandleArraySize([[./MOD/]]..EXML_FILE)
           
-          H.CopyFile([[.\MOD\]]..EXML_FILE,[[.\_TEMP\DECOMPILED\]]..EXML_FILE..[[*]],H.paramFiles)
+          H.CopyFile([[./MOD/]]..EXML_FILE,[[./_TEMP/DECOMPILED/]]..EXML_FILE..[[*]],H.paramFiles)
           
           local count = 0
-          while not H.IsFileExist([[.\_TEMP\DECOMPILED\]]..EXML_FILE) and count < 10 do
+          while not H.IsFileExist([[./_TEMP/DECOMPILED/]]..EXML_FILE) and count < 10 do
             printf("Waiting for %s to exist",EXML_FILE)
             count = count + 1
             H.sleep(1)
           end
           if count >= 10 then
-            print(">>> "..H.gcWARNING.." [WARNING] It seems we have a problem copying "..[[.\MOD\]]..EXML_FILE.." "..H._zDEFAULT)
+            print(">>> "..H.gcWARNING.." [WARNING] It seems we have a problem copying "..[[./MOD/]]..EXML_FILE.." "..H._zDEFAULT)
             print(">>> "..H.gcWARNING.."           - Is your drive out of space! "..H._zDEFAULT)
             print(">>> "..H.gcWARNING.."           - Is your path to AMUMSS folder to long! "..H._zDEFAULT)
             print(">>> "..H.gcWARNING.."           - Is there a lock on the folder/file being copied! "..H._zDEFAULT)
           end
           
           -- this one was decompiled, delete the .MBIN
-          H.DeleteFile([[.\MOD\]]..MBIN_table[i])
+          H.DeleteFile([[./MOD/]]..MBIN_table[i])
           -- table.remove(MBIN_table,i) -- done already
           MBIN_table[i] = "NIL"
         end
@@ -7695,7 +7946,7 @@ HandleArraySize([[.\MOD\]]..EXML_FILE)
         
         -- print(">>> BEFORE 2nd MBINCompiler_D")
         -- now 2nd try to decompile the .MBIN in MOD
-        status = H.MBINCompiler_D([[.\MOD]],false,false,true,"",true)
+        status = H.MBINCompiler_D([[./MOD]],false,false,true,"",true)
         -- print(">>> AFTER 2nd MBINCompiler_D")
         H.switchBACK = true
         -- SwitchBackToDeclaredMBINCompiler(H,false)
@@ -7762,7 +8013,7 @@ HandleArraySize([[.\MOD\]]..EXML_FILE)
       for i=#MBIN_table,1,-1 do
         if MBIN_table[i] then
           local EXML_FILE = MBIN_table[i]:gsub(".MBIN$",".MXML")
-          if not H.IsFileExist([[.\MOD\]]..EXML_FILE) then
+          if not H.IsFileExist([[./MOD/]]..EXML_FILE) then
             -- reporting handled by CheckMBINCompilerLOG.lua above
             -- print(">>> "..H.gcWARNING.." [WARNING] Could not DECOMPILE "..MBIN_table[i].." "..H._zDEFAULT)
             -- H.Report("","Could not DECOMPILE "..MBIN_table[i],"WARNING")
@@ -7772,12 +8023,12 @@ HandleArraySize([[.\MOD\]]..EXML_FILE)
             -- print([[.before trying to copy .MXML in MOD to _TEMP\DECOMPILED when they came from NMS paks: ]]..EXML_FILE)
             
 -- discover array_size flags and purge file
-HandleArraySize([[.\MOD\]]..EXML_FILE)
+HandleArraySize([[./MOD/]]..EXML_FILE)
           
-            H.CopyFile([[.\MOD\]]..EXML_FILE,[[.\_TEMP\DECOMPILED\]]..EXML_FILE..[[*]],H.paramFiles)
+            H.CopyFile([[./MOD/]]..EXML_FILE,[[./_TEMP/DECOMPILED/]]..EXML_FILE..[[*]],H.paramFiles)
             
             -- this one was decompiled, delete the .MBIN
-            H.DeleteFile([[.\MOD\]]..MBIN_table[i])
+            H.DeleteFile([[./MOD/]]..MBIN_table[i])
             -- table.remove(MBIN_table,i) -- done already
             MBIN_table[i] = "NIL"
           end
@@ -7803,7 +8054,7 @@ HandleArraySize([[.\MOD\]]..EXML_FILE)
           end
 
           local EXML_FILE = MBIN_table[i]:gsub(".MBIN$",".MXML")
-          if not H.IsFileExist([[.\MOD\]]..EXML_FILE) then
+          if not H.IsFileExist([[./MOD/]]..EXML_FILE) then
             print(">>> "..H.gcWARNING.." [WARNING] Could not DECOMPILE "..MBIN_table[i]..PCExt.." "..H._zDEFAULT)
             if whichReport == "AMUMSS" then
               H.Report("","Could not DECOMPILE "..MBIN_table[i]..PCExt,"WARNING")
@@ -7815,12 +8066,12 @@ HandleArraySize([[.\MOD\]]..EXML_FILE)
             -- print([[.before trying to copy .MXML in MOD to _TEMP\DECOMPILED when they came from NMS paks: ]]..EXML_FILE)
             
 -- discover array_size flags and purge file
-HandleArraySize([[.\MOD\]]..EXML_FILE)
+HandleArraySize([[./MOD/]]..EXML_FILE)
           
-            H.CopyFile([[.\MOD\]]..EXML_FILE, [[.\_TEMP\DECOMPILED\]]..EXML_FILE..[[*]], H.paramFiles)
+            H.CopyFile([[./MOD/]]..EXML_FILE, [[./_TEMP/DECOMPILED/]]..EXML_FILE..[[*]], H.paramFiles)
             
             -- this one was decompiled, delete the .MBIN
-            H.DeleteFile([[.\MOD\]]..MBIN_table[i])
+            H.DeleteFile([[./MOD/]]..MBIN_table[i])
             -- table.remove(MBIN_table,i) -- done already
             MBIN_table[i] = "NIL"
           end
@@ -7839,7 +8090,7 @@ HandleArraySize([[.\MOD\]]..EXML_FILE)
         -- print(".before FINALLY DeleteFile *.MBIN in MOD")
         -- FINALLY, delete any MBIN left in the list
         for i=1,#MBIN_table do
-          H.DeleteFile([[.\MOD\]]..MBIN_table[i])
+          H.DeleteFile([[./MOD/]]..MBIN_table[i])
         end
       end
     end              
@@ -7869,8 +8120,8 @@ do -- ALWAYS EXECUTED
     -- H.WFAK()
     MasterPath = lfs.currentdir()
   end
-  if strfind(MasterPath,[[\MODBUILDER]],1,true) == nil then
-    path = MasterPath..[[MODBUILDER\]]
+  if strfind(MasterPath,[[MODBUILDER]],1,true) == nil then
+    path = MasterPath..H.gPS..[[MODBUILDER]]..H.gPS
   end
   -- H.pv("LuaStarting path: ["..path.."]")
   function H.LuaStarting()

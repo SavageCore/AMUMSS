@@ -1,0 +1,3 @@
+# Follow `source common.sh` without needing -x on the command line.
+external-sources=true
+source-path=SCRIPTDIR

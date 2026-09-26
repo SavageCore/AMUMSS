@@ -13,9 +13,9 @@ THIS = "In CheckMBINCompilerLOG: "
 local LogTable = H.ParseTextFileIntoTable(arg[2]..[[MBINCompiler.log]])
 
 --starting folder varies
-local MASTER_FOLDER_PATH = string.gsub(lfs.currentdir(),[[\MODBUILDER]],"")..[[\]] -- \ required because we are in AMUMSS folder
+local MASTER_FOLDER_PATH = H.gMASTER_FOLDER_PATH -- already native + trailing sep (001)
 --local MASTER_FOLDER_PATH = H.LoadFileData(arg[2]..[[MASTER_FOLDER_PATH.txt]])
-local MODfolderPath = MASTER_FOLDER_PATH..[[MODBUILDER\MOD\]]
+local MODfolderPath = MASTER_FOLDER_PATH..[[MODBUILDER]]..H.gPS..[[MOD]]..H.gPS
 -- H.printf("==> MODfolderPath = [%s]",MODfolderPath)
 
 -- sometimes arg[3] may have MASTER_FOLDER_PATH..[[MODBUILDER\MOD\]] in front of the message/filename
@@ -187,10 +187,13 @@ if warningCount > 0 then
         if scriptFileList then
           if string.find(info,[[.MXML]],1,true) then
             local exmlName = string.match(info,[[(%a:\.+)]])
+    if exmlName == nil and not H.gIsWindows then
+      exmlName = string.match(info,[[([%w%./_+-]+%.[Mm][Xx][Mm][Ll])]])
+    end
             -- printf("lfs.currentdir() = [%s]",lfs.currentdir())
-            exmlName = string.gsub(exmlName,lfs.currentdir()..[[\MOD\]],"")
+            if exmlName ~= nil then exmlName = string.gsub(exmlName,lfs.currentdir()..H.gPS..[[MOD]]..H.gPS,"") end
             -- printf("===   exmlName = [%s]",tostring(exmlName))
-            local scriptNames = scriptFileList[exmlName]
+            local scriptNames = exmlName ~= nil and scriptFileList[exmlName] or nil
             -- printf("=== scriptNames = [%s]",tostring(scriptNames))
             if scriptNames then
               for i=1,#scriptNames do
@@ -274,10 +277,13 @@ if errorCount > 0 then
         if scriptFileList then
           if string.find(info,[[.MXML]],1,true) then
             local exmlName = string.match(info,[[(%a:\.+)]])
+    if exmlName == nil and not H.gIsWindows then
+      exmlName = string.match(info,[[([%w%./_+-]+%.[Mm][Xx][Mm][Ll])]])
+    end
             -- printf("lfs.currentdir() = [%s]",lfs.currentdir())
-            exmlName = string.gsub(exmlName,lfs.currentdir()..[[\MOD\]],"")
+            if exmlName ~= nil then exmlName = string.gsub(exmlName,lfs.currentdir()..H.gPS..[[MOD]]..H.gPS,"") end
             -- printf("===   exmlName = [%s]",tostring(exmlName))
-            local scriptNames = scriptFileList[exmlName]
+            local scriptNames = exmlName ~= nil and scriptFileList[exmlName] or nil
             -- printf("=== scriptNames = [%s]",tostring(scriptNames))
             if scriptNames then
               for i=1,#scriptNames do
